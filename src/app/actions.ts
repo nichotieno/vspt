@@ -1,21 +1,43 @@
 'use server';
 
 import { db } from '@/lib/db';
-import type { PortfolioItem, Transaction, PortfolioHistoryItem } from '@/types';
+import type { PortfolioItem, Transaction, PortfolioHistoryItem, User } from '@/types';
 import { revalidatePath } from 'next/cache';
 import { getQuote } from '@/lib/finnhub';
+import { randomUUID } from 'crypto';
 
 // User Actions
-export async function createUserInDb(id: string, email: string) {
+export async function createUserInDb(email: string, password_DO_NOT_STORE_IN_PLAINTEXT: string) {
     try {
-        const stmt = db.prepare('INSERT INTO users (id, email, cash) VALUES (?, ?, ?)');
-        stmt.run(id, email, 100000); // Start with 100k cash
+        const id = randomUUID();
+        const stmt = db.prepare('INSERT INTO users (id, email, password, cash) VALUES (?, ?, ?, ?)');
+        // In a real application, you should hash the password before storing it.
+        stmt.run(id, email, password_DO_NOT_STORE_IN_PLAINTEXT, 100000);
         return { success: true };
     } catch (error: any) {
-        // Ignore unique constraint error if user already exists
         if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
-            return { success: true, message: 'User already exists.' };
+            return { success: false, error: 'User with this email already exists.' };
         }
+        return { success: false, error: error.message };
+    }
+}
+
+export async function logInUser(email: string, password_DO_NOT_STORE_IN_PLAINTEXT: string): Promise<{ success: boolean; user?: User; error?: string }> {
+    try {
+        const stmt = db.prepare('SELECT id, email, password FROM users WHERE email = ?');
+        const userRow = stmt.get(email) as { id: string; email: string; password: string } | undefined;
+
+        if (!userRow) {
+            return { success: false, error: 'Invalid email or password.' };
+        }
+        
+        // In a real application, use bcrypt.compare to check the password hash.
+        if (userRow.password !== password_DO_NOT_STORE_IN_PLAINTEXT) {
+            return { success: false, error: 'Invalid email or password.' };
+        }
+
+        return { success: true, user: { uid: userRow.id, email: userRow.email } };
+    } catch (error: any) {
         return { success: false, error: error.message };
     }
 }
@@ -113,7 +135,7 @@ export async function buyStockAction(userId: string, ticker: string, quantity: n
 
     try {
         transaction();
-        // await addPortfolioHistoryRecord(userId); // Add history record after successful transaction
+        await addPortfolioHistoryRecord(userId); // Add history record after successful transaction
         revalidatePath('/');
         revalidatePath('/transactions');
         return { success: true };
@@ -151,7 +173,7 @@ export async function sellStockAction(userId: string, ticker: string, quantity: 
     
     try {
         transaction();
-        // await addPortfolioHistoryRecord(userId); // Add history record after successful transaction
+        await addPortfolioHistoryRecord(userId); // Add history record after successful transaction
         revalidatePath('/');
         revalidatePath('/transactions');
         return { success: true };

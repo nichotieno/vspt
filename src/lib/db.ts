@@ -22,6 +22,7 @@ function initializeDb() {
         CREATE TABLE IF NOT EXISTS users (
             id TEXT PRIMARY KEY,
             email TEXT NOT NULL UNIQUE,
+            password TEXT NOT NULL,
             cash REAL NOT NULL DEFAULT 100000,
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         );

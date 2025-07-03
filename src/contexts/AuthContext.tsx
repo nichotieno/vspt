@@ -1,16 +1,8 @@
 "use client";
 
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
-import {
-  User as FirebaseUser,
-  createUserWithEmailAndPassword,
-  onAuthStateChanged,
-  signInWithEmailAndPassword,
-  signOut,
-} from 'firebase/auth';
-import { auth } from '@/lib/firebase';
 import type { User } from '@/types';
-import { createUserInDb } from '@/app/actions';
+import { createUserInDb, logInUser } from '@/app/actions';
 
 interface AuthContextType {
   user: User | null;
@@ -22,44 +14,50 @@ interface AuthContextType {
 
 export const AuthContext = createContext<AuthContextType | null>(null);
 
+const USER_STORAGE_KEY = 'stocksim-user';
+
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        setUser({
-          uid: firebaseUser.uid,
-          email: firebaseUser.email,
-        });
-      } else {
-        setUser(null);
+    try {
+      const storedUser = localStorage.getItem(USER_STORAGE_KEY);
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
       }
+    } catch (error) {
+      console.error("Failed to parse user from localStorage", error);
+      localStorage.removeItem(USER_STORAGE_KEY);
+    } finally {
       setLoading(false);
-    });
-
-    return () => unsubscribe();
+    }
   }, []);
 
-  const logIn = (email: string, pass: string) => {
-    return signInWithEmailAndPassword(auth, email, pass);
+  const logIn = async (email: string, pass: string) => {
+    const result = await logInUser(email, pass);
+    if (result.success && result.user) {
+      setUser(result.user);
+      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(result.user));
+      return result;
+    } else {
+      throw new Error(result.error || 'Login failed.');
+    }
   };
 
   const signUp = async (email: string, pass: string) => {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
-    const firebaseUser = userCredential.user;
-    
-    // Create user in SQLite DB via Server Action
-    if (firebaseUser.email) {
-      await createUserInDb(firebaseUser.uid, firebaseUser.email);
+    const result = await createUserInDb(email, pass);
+    if (result.success) {
+      // Don't auto-login, let them go to the login page.
+      return result;
+    } else {
+      throw new Error(result.error || 'Signup failed.');
     }
-
-    return userCredential;
   };
 
-  const logOut = () => {
-    return signOut(auth);
+  const logOut = async () => {
+    setUser(null);
+    localStorage.removeItem(USER_STORAGE_KEY);
   };
 
   const value = {
