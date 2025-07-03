@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { BarChart2, ArrowRight, TrendingUp, Zap } from 'lucide-react';
-import Image from 'next/image';
+import { WelcomeArt } from '@/components/stock-sim/svgs/WelcomeArt';
 
 export default function WelcomePage() {
   return (
@@ -42,14 +42,9 @@ export default function WelcomePage() {
                   </Button>
                 </div>
               </div>
-               <Image
-                src="https://placehold.co/600x600.png"
-                width="600"
-                height="600"
-                alt="Hero"
-                className="mx-auto aspect-square overflow-hidden rounded-xl object-cover sm:w-full lg:order-last lg:aspect-square"
-                data-ai-hint="digital stock ticker"
-              />
+               <div className="mx-auto aspect-square sm:w-full lg:order-last lg:aspect-square">
+                 <WelcomeArt />
+               </div>
             </div>
           </div>
         </section>

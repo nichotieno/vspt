@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import { BarChart2, Eye, EyeOff } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -11,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
+import { SignupArt } from '@/components/stock-sim/svgs/SignupArt';
 
 export default function SignupPage() {
   const [name, setName] = useState('');
@@ -121,15 +121,8 @@ export default function SignupPage() {
           </div>
         </div>
       </div>
-      <div className="hidden lg:block">
-        <Image
-          src="https://placehold.co/1920x1080.png"
-          alt="Image"
-          width="1920"
-          height="1080"
-          className="h-full w-full object-cover dark:brightness-[0.3] dark:grayscale"
-          data-ai-hint="market growth"
-        />
+      <div className="hidden bg-muted lg:block">
+        <SignupArt />
       </div>
     </div>
   );
