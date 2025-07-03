@@ -53,8 +53,12 @@ export default function DashboardPage() {
                 // Filter out symbols that might be problematic (e.g., warrants, preferred shares)
                 const filteredSymbols = symbols.filter((s: any) => s.symbol && s.description && !s.symbol.includes('.') && s.type === 'Common Stock');
                 setAllSymbols(filteredSymbols);
+                if (filteredSymbols.length === 0) {
+                    setIsLoading(false); // No symbols found, stop loading.
+                }
             } catch (error) {
                 console.error("Failed to fetch stock symbols:", error);
+                setIsLoading(false); // Stop loading on error
             }
         };
         if (user) {
@@ -63,41 +67,54 @@ export default function DashboardPage() {
     }, [user]);
 
     const loadMoreStocks = useCallback(async () => {
-        if (allSymbols.length === 0 || !hasMore) return;
-        
+        // Prevent fetching if already loading or no more data
+        if (isLoading || !hasMore || allSymbols.length === 0) return;
+    
         setIsLoading(true);
-        const start = (page - 1) * STOCKS_PER_PAGE;
-        const end = start + STOCKS_PER_PAGE;
-        const symbolsToFetch = allSymbols.slice(start, end);
-
-        if (symbolsToFetch.length === 0) {
-            setHasMore(false);
+        try {
+            const start = (page - 1) * STOCKS_PER_PAGE;
+            const end = start + STOCKS_PER_PAGE;
+            const symbolsToFetch = allSymbols.slice(start, end);
+    
+            if (symbolsToFetch.length === 0) {
+                setHasMore(false);
+                return;
+            }
+    
+            const stocksDataPromises = symbolsToFetch.map(async (s) => {
+                try {
+                    const [quote, profile] = await Promise.all([
+                        getQuote(s.symbol),
+                        getCompanyProfile(s.symbol)
+                    ]);
+                    // Ensure we have the essential data before returning
+                    if (quote && profile) {
+                        return {
+                            symbol: s.symbol,
+                            description: s.description,
+                            logo: profile.logo,
+                            quote,
+                        };
+                    }
+                } catch (error) {
+                    console.error(`Failed to fetch data for ${s.symbol}`, error);
+                }
+                return null; // Return null for failed fetches
+            });
+    
+            const stocksData = (await Promise.all(stocksDataPromises)).filter(Boolean) as StockData[];
+    
+            setStocks(prev => [...prev, ...stocksData]);
+            setPage(prev => prev + 1);
+            if (end >= allSymbols.length) {
+                setHasMore(false);
+            }
+        } catch (error) {
+            console.error("An error occurred while loading more stocks:", error);
+        } finally {
             setIsLoading(false);
-            return;
         }
-
-        const stocksData = await Promise.all(
-            symbolsToFetch.map(async (s) => {
-                 const [quote, profile] = await Promise.all([
-                    getQuote(s.symbol),
-                    getCompanyProfile(s.symbol)
-                ]);
-                return {
-                    symbol: s.symbol,
-                    description: s.description,
-                    logo: profile.logo,
-                    quote,
-                };
-            })
-        );
-
-        setStocks(prev => [...prev, ...stocksData]);
-        setPage(prev => prev + 1);
-        if (end >= allSymbols.length) {
-            setHasMore(false);
-        }
-        setIsLoading(false);
-    }, [allSymbols, page, hasMore]);
+    }, [allSymbols, page, hasMore, isLoading]);
 
     useEffect(() => {
         if (allSymbols.length > 0 && page === 1) {
@@ -203,8 +220,8 @@ export default function DashboardPage() {
                                                 <div className="flex items-center gap-3">
                                                     <Skeleton className="hidden h-9 w-9 rounded-full sm:flex" />
                                                     <div className="grid gap-0.5">
-                                                        <Skeleton className="h-4 w-12" />
-                                                        <Skeleton className="h-3 w-40" />
+                                                        <Skeleton className="h-5 w-12" />
+                                                        <Skeleton className="h-4 w-40" />
                                                     </div>
                                                 </div>
                                             </TableCell>
