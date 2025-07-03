@@ -87,7 +87,7 @@ export async function updateUserProfile(userId: string, name: string, investment
         const stmt = db.prepare('UPDATE users SET name = ?, investment_strategy = ? WHERE id = ?');
         stmt.run(name, investmentStrategy, userId);
         revalidatePath('/profile');
-        revalidatePath('/'); // So AI note gets updated strategy if visible
+        revalidatePath('/dashboard'); // So AI note gets updated strategy if visible
         return { success: true };
     } catch (error: any) {
         return { success: false, error: error.message };
@@ -157,7 +157,7 @@ export async function buyStockAction(userId: string, ticker: string, quantity: n
     try {
         transaction();
         await addPortfolioHistoryRecord(userId); // Add history record after successful transaction
-        revalidatePath('/');
+        revalidatePath('/dashboard');
         revalidatePath('/transactions');
         return { success: true };
     } catch (error: any) {
@@ -195,7 +195,7 @@ export async function sellStockAction(userId: string, ticker: string, quantity: 
     try {
         transaction();
         await addPortfolioHistoryRecord(userId); // Add history record after successful transaction
-        revalidatePath('/');
+        revalidatePath('/dashboard');
         revalidatePath('/transactions');
         return { success: true };
     } catch (error: any) {
@@ -212,7 +212,7 @@ export async function toggleWatchlistAction(userId: string, ticker: string, isWa
             const stmt = db.prepare('INSERT INTO watchlist (user_id, ticker) VALUES (?, ?)');
             stmt.run(userId, ticker);
         }
-        revalidatePath('/');
+        revalidatePath('/dashboard');
         return { success: true };
     } catch (error: any) {
         return { success: false, error: error.message };

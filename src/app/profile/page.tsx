@@ -71,7 +71,7 @@ export default function ProfilePage() {
         <div className="flex min-h-screen w-full flex-col bg-muted/40">
             <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:px-6">
                 <Button asChild variant="outline" size="icon" className="h-7 w-7">
-                  <Link href="/">
+                  <Link href="/dashboard">
                     <ArrowLeft className="h-4 w-4" />
                     <span className="sr-only">Back</span>
                   </Link>
