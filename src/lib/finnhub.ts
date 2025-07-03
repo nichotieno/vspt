@@ -1,38 +1,32 @@
 const API_KEY = process.env.NEXT_PUBLIC_FINNHUB_API_KEY;
 const BASE_URL = 'https://finnhub.io/api/v1';
 
-if (!API_KEY) {
-    console.error("Finnhub API key is not set. Please set NEXT_PUBLIC_FINNHUB_API_KEY in your .env.local file.");
-}
-
 async function fetcher(url: string, mockResponse?: any) {
     if (!API_KEY) {
-        throw new Error("API key is missing.");
+        console.error("Finnhub API key is not set. Please set NEXT_PUBLIC_FINNHUB_API_KEY. Using mock data.");
+        return mockResponse;
     }
     
     // If using the placeholder key, return mock data to prevent crashes and allow UI to render.
     if (API_KEY === 'changeme') {
-        // Using a timeout to simulate network latency
         await new Promise(resolve => setTimeout(resolve, 300));
-        console.warn(`Using placeholder Finnhub API key. Mock data is being used.`);
+        console.warn(`Using placeholder Finnhub API key. Mock data is being used for ${url.split('?')[0]}.`);
         return mockResponse;
     }
 
     try {
         const res = await fetch(url);
         if (!res.ok) {
-            const errorData = await res.json().catch(() => ({ error: 'An unknown error occurred' }));
-            // Finnhub API returns errors in an `error` property.
-            throw new Error(errorData.error || 'An error occurred while fetching the data.');
+            const errorData = await res.json().catch(() => ({}));
+            const errorMessage = errorData.error || `HTTP error! status: ${res.status}`;
+            throw new Error(errorMessage);
         }
         return res.json();
     } catch (error: any) {
-         if (error.message.includes("You don't have access to this resource") || error.message.includes("Failed to fetch")) {
-            console.warn(`Finnhub API/Network error for URL: ${url.split('&token=')[0]}. Error: ${error.message}. Returning mock data.`);
-            return mockResponse;
-        }
-        // Re-throw other unexpected errors
-        throw error;
+        // This catches any error from the try block (network, parsing, etc.)
+        // It logs the error and returns mock data, preventing the UI from crashing.
+        console.warn(`Finnhub API request failed for URL: ${url.split('&token=')[0]}. Error: ${error.message}. Returning mock data.`);
+        return mockResponse;
     }
 }
 
