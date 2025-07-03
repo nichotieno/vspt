@@ -26,7 +26,7 @@ A full-stack simulated stock trading web application built with Next.js, Tailwin
 
 1.  **Clone the repository:**
     ```bash
-    git clone <your-repository-url>
+    git clone https://github.com/nichotieno/vspt.git
     cd stocksim
     ```
 
@@ -96,7 +96,3 @@ This repository includes a GitHub Actions workflow (`.github/workflows/ci.yml`) 
 - Builds the Docker image to ensure it's valid
 
 For the CI pipeline to pass, you must add your `FINNHUB_API_KEY` as a repository secret in your GitHub project settings.
-
-## License
-
-It is recommended to add a `LICENSE` file (e.g., MIT) to the project root to define how others can use your code.
