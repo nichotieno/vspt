@@ -1,7 +1,7 @@
 
 'use server';
 
-import { logInUser, buyStockAction, createUserInDb } from './actions';
+import { logInUser, buyStockAction, createUserInDb, sellStockAction, toggleWatchlistAction } from './actions';
 import { db } from '@/lib/db';
 import bcrypt from 'bcrypt';
 import { getQuote } from '@/lib/finnhub';
@@ -41,6 +41,35 @@ describe('Server Actions', () => {
   beforeEach(() => {
     // Clear all mocks before each test to ensure tests are isolated
     jest.clearAllMocks();
+  });
+
+  describe('createUserInDb', () => {
+    it('should create a new user successfully', async () => {
+      const mockRun = jest.fn();
+      const mockStatement = { run: mockRun };
+      (mockedDb.prepare as jest.Mock).mockReturnValue(mockStatement);
+      (mockedBcrypt.hash as jest.Mock).mockResolvedValue('hashedpassword');
+
+      const result = await createUserInDb('new@example.com', 'New User', 'password123');
+
+      expect(result.success).toBe(true);
+      expect(mockedDb.prepare).toHaveBeenCalledWith('INSERT INTO users (id, email, name, password, cash) VALUES (?, ?, ?, ?, ?)');
+      expect(mockedBcrypt.hash).toHaveBeenCalledWith('password123', 10);
+      expect(mockRun).toHaveBeenCalledWith(expect.any(String), 'new@example.com', 'New User', 'hashedpassword', 100000);
+    });
+
+    it('should fail if the user already exists', async () => {
+      const mockError = { code: 'SQLITE_CONSTRAINT_UNIQUE' };
+      const mockRun = jest.fn().mockImplementation(() => { throw mockError; });
+      const mockStatement = { run: mockRun };
+      (mockedDb.prepare as jest.Mock).mockReturnValue(mockStatement);
+      (mockedBcrypt.hash as jest.Mock).mockResolvedValue('hashedpassword');
+
+      const result = await createUserInDb('exists@example.com', 'Existing User', 'password123');
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('User with this email already exists.');
+    });
   });
 
   describe('logInUser', () => {
@@ -93,7 +122,6 @@ describe('Server Actions', () => {
     const quantity = 10;
     const price = 150;
 
-    // This helper sets up a flexible mock for db.prepare for each test.
     const setupDbMocks = (mocks: { [query: string]: { run?: jest.Mock; get?: jest.Mock; all?: jest.Mock } }) => {
       (mockedDb.prepare as jest.Mock).mockImplementation((query: string) => {
         for (const key in mocks) {
@@ -101,7 +129,6 @@ describe('Server Actions', () => {
             return mocks[key];
           }
         }
-        // Return a default mock if no specific query matches
         return { run: jest.fn(), get: jest.fn(), all: jest.fn() };
       });
     };
@@ -159,9 +186,121 @@ describe('Server Actions', () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toBe('Not enough cash.');
-      // Ensure no db writes happened
       expect(mockedDb.prepare).not.toHaveBeenCalledWith(expect.stringMatching(/^INSERT/));
       expect(mockedDb.prepare).not.toHaveBeenCalledWith(expect.stringMatching(/^UPDATE/));
+    });
+  });
+
+  describe('sellStockAction', () => {
+    const userId = 'user-1';
+    const ticker = 'AAPL';
+    const quantity = 5;
+    const price = 160;
+
+    const setupDbMocks = (mocks: { [query: string]: { run?: jest.Mock; get?: jest.Mock; all?: jest.Mock } }) => {
+        (mockedDb.prepare as jest.Mock).mockImplementation((query: string) => {
+            for (const key in mocks) {
+                if (query.startsWith(key)) {
+                    return mocks[key];
+                }
+            }
+            return { run: jest.fn(), get: jest.fn(), all: jest.fn() };
+        });
+    };
+
+    it('should successfully sell some shares of a stock', async () => {
+        const existingItem = { id: 1, quantity: 10 };
+        const mockRun = jest.fn();
+        setupDbMocks({
+            'SELECT id, quantity FROM portfolio': { get: jest.fn().mockReturnValue(existingItem) },
+            'UPDATE portfolio SET quantity': { run: mockRun },
+            'UPDATE users SET cash': { run: mockRun },
+            'INSERT INTO transactions': { run: mockRun },
+            'SELECT ticker, quantity, avg_cost as avgCost FROM portfolio': { all: jest.fn().mockReturnValue([]) },
+            'SELECT cash FROM users': { get: jest.fn().mockReturnValue({ cash: 10000 }) },
+            'INSERT INTO portfolio_history': { run: mockRun },
+        });
+        (mockedGetQuote as jest.Mock).mockResolvedValue({ c: 160 });
+
+        const result = await sellStockAction(userId, ticker, quantity, price);
+
+        expect(result.success).toBe(true);
+        expect(mockRun).toHaveBeenCalledWith(existingItem.quantity - quantity, existingItem.id);
+        expect(revalidatePath).toHaveBeenCalledWith('/transactions');
+    });
+    
+    it('should successfully sell all shares of a stock', async () => {
+        const existingItem = { id: 1, quantity: 5 };
+        const mockRun = jest.fn();
+        setupDbMocks({
+            'SELECT id, quantity FROM portfolio': { get: jest.fn().mockReturnValue(existingItem) },
+            'DELETE FROM portfolio': { run: mockRun },
+            'UPDATE users SET cash': { run: mockRun },
+            'INSERT INTO transactions': { run: mockRun },
+            'SELECT ticker, quantity, avg_cost as avgCost FROM portfolio': { all: jest.fn().mockReturnValue([]) },
+            'SELECT cash FROM users': { get: jest.fn().mockReturnValue({ cash: 10000 }) },
+            'INSERT INTO portfolio_history': { run: mockRun },
+        });
+        (mockedGetQuote as jest.Mock).mockResolvedValue({ c: 160 });
+
+        const result = await sellStockAction(userId, ticker, 5, price);
+
+        expect(result.success).toBe(true);
+        expect(mockRun).toHaveBeenCalledWith(existingItem.id);
+    });
+
+    it('should fail if trying to sell more shares than owned', async () => {
+        const existingItem = { id: 1, quantity: 4 };
+        setupDbMocks({
+            'SELECT id, quantity FROM portfolio': { get: jest.fn().mockReturnValue(existingItem) },
+        });
+
+        const result = await sellStockAction(userId, ticker, quantity, price);
+
+        expect(result.success).toBe(false);
+        expect(result.error).toBe('Not enough shares to sell.');
+    });
+
+     it('should fail if stock is not in portfolio', async () => {
+        setupDbMocks({
+            'SELECT id, quantity FROM portfolio': { get: jest.fn().mockReturnValue(undefined) },
+        });
+
+        const result = await sellStockAction(userId, ticker, quantity, price);
+
+        expect(result.success).toBe(false);
+        expect(result.error).toBe('Not enough shares to sell.');
+     });
+  });
+
+  describe('toggleWatchlistAction', () => {
+    const userId = 'user-1';
+    const ticker = 'MSFT';
+
+    it('should add a stock to the watchlist if not present', async () => {
+      const mockRun = jest.fn();
+      const mockStatement = { run: mockRun };
+      (mockedDb.prepare as jest.Mock).mockReturnValue(mockStatement);
+
+      const result = await toggleWatchlistAction(userId, ticker, false);
+
+      expect(result.success).toBe(true);
+      expect(mockedDb.prepare).toHaveBeenCalledWith('INSERT INTO watchlist (user_id, ticker) VALUES (?, ?)');
+      expect(mockRun).toHaveBeenCalledWith(userId, ticker);
+      expect(revalidatePath).toHaveBeenCalledWith('/', 'layout');
+    });
+
+    it('should remove a stock from the watchlist if present', async () => {
+      const mockRun = jest.fn();
+      const mockStatement = { run: mockRun };
+      (mockedDb.prepare as jest.Mock).mockReturnValue(mockStatement);
+
+      const result = await toggleWatchlistAction(userId, ticker, true);
+
+      expect(result.success).toBe(true);
+      expect(mockedDb.prepare).toHaveBeenCalledWith('DELETE FROM watchlist WHERE user_id = ? AND ticker = ?');
+      expect(mockRun).toHaveBeenCalledWith(userId, ticker);
+      expect(revalidatePath).toHaveBeenCalledWith('/', 'layout');
     });
   });
 });
