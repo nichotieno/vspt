@@ -12,10 +12,11 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useAuth } from "@/hooks/use-auth";
 import { LogOut, User as UserIcon } from "lucide-react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export function UserNav() {
   const { user, logOut } = useAuth();
+  const router = useRouter();
 
   if (!user) return null;
 
@@ -49,11 +50,9 @@ export function UserNav() {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link href="/profile">
-            <UserIcon className="mr-2 h-4 w-4" />
-            <span>Profile</span>
-          </Link>
+        <DropdownMenuItem onClick={() => router.push('/profile')}>
+          <UserIcon className="mr-2 h-4 w-4" />
+          <span>Profile</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={logOut}>
