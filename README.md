@@ -38,7 +38,7 @@ A full-stack simulated stock trading web application built with Next.js, Tailwin
     Create a `.env.local` file in the root of your project and add your Finnhub API key. You can get one for free from [Finnhub.io](https://finnhub.io/register).
 
     ```env
-    NEXT_PUBLIC_FINNHUB_API_KEY=your_finnhub_api_key_here
+    FINNHUB_API_KEY=your_finnhub_api_key_here
     ```
 
 ### Running the Development Server
@@ -59,5 +59,5 @@ The application is configured for easy deployment on platforms like Vercel or Fi
 
 1.  Push your code to a Git repository (e.g., GitHub).
 2.  Import the repository on [Vercel](https://vercel.com/new).
-3.  Add your `NEXT_PUBLIC_FINNHUB_API_KEY` as an environment variable in the Vercel project settings.
+3.  Add your `FINNHUB_API_KEY` as an environment variable in the Vercel project settings.
 4.  Deploy! Vercel will automatically build and deploy your Next.js application.

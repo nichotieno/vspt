@@ -1,9 +1,11 @@
-const API_KEY = process.env.NEXT_PUBLIC_FINNHUB_API_KEY;
+'use server';
+
+const API_KEY = process.env.FINNHUB_API_KEY;
 const BASE_URL = 'https://finnhub.io/api/v1';
 
 async function fetcher(url: string, mockResponse?: any) {
     if (!API_KEY) {
-        console.error("Finnhub API key is not set. Please set NEXT_PUBLIC_FINNHUB_API_KEY. Using mock data.");
+        console.error("Finnhub API key is not set. Please set FINNHUB_API_KEY. Using mock data.");
         return mockResponse;
     }
     
