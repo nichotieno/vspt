@@ -73,6 +73,16 @@ export interface User {
   investmentStrategy: string | null;
 }
 
+export interface StockSymbol {
+    currency: string;
+    description: string;
+    displaySymbol: string;
+    figi: string;
+    mic: string;
+    symbol: string;
+    type: string;
+}
+
 export interface PortfolioHistoryItem {
   id?: string;
   date: string;

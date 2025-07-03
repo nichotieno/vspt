@@ -73,6 +73,24 @@ export async function getStockCandles(symbol: string, resolution: string, from: 
   return fetcher(`${BASE_URL}/stock/candle?symbol=${symbol}&resolution=${resolution}&from=${from}&to=${to}&token=${API_KEY}`, mock);
 }
 
+export async function getStockSymbols(exchange: string) {
+    const mock = [
+        { "currency": "USD", "description": "APPLE INC", "displaySymbol": "AAPL", "figi": "BBG000B9XRY4", "mic": "XNAS", "symbol": "AAPL", "type": "Common Stock" },
+        { "currency": "USD", "description": "MICROSOFT CORP", "displaySymbol": "MSFT", "figi": "BBG000BPH459", "mic": "XNAS", "symbol": "MSFT", "type": "Common Stock" },
+        { "currency": "USD", "description": "AMAZON.COM INC", "displaySymbol": "AMZN", "figi": "BBG000BVPV84", "mic": "XNAS", "symbol": "AMZN", "type": "Common Stock" },
+        { "currency": "USD", "description": "ALPHABET INC-CL A", "displaySymbol": "GOOGL", "figi": "BBG009S39JX6", "mic": "XNAS", "symbol": "GOOGL", "type": "Common Stock" },
+        { "currency": "USD", "description": "TESLA INC", "displaySymbol": "TSLA", "figi": "BBG000N9MNX3", "mic": "XNAS", "symbol": "TSLA", "type": "Common Stock" },
+        { "currency": "USD", "description": "META PLATFORMS INC", "displaySymbol": "META", "figi": "BBG000MM2P62", "mic": "XNAS", "symbol": "META", "type": "Common Stock" },
+        { "currency": "USD", "description": "NVIDIA CORP", "displaySymbol": "NVDA", "figi": "BBG000BBJQV0", "mic": "XNAS", "symbol": "NVDA", "type": "Common Stock" },
+    ];
+    // Return only stocks that have a symbol and description
+    const data = await fetcher(`${BASE_URL}/stock/symbol?exchange=${exchange}&token=${API_KEY}`, mock);
+    if(Array.isArray(data)) {
+        return data.filter(s => s.symbol && s.description && !s.symbol.includes('.'));
+    }
+    return [];
+}
+
 export async function getMarketStatus(exchange: string) {
     const mock = { isOpen: true, holiday: null };
     return fetcher(`${BASE_URL}/stock/market-status?exchange=${exchange}&token=${API_KEY}`, mock);
