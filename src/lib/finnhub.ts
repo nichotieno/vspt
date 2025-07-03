@@ -18,13 +18,22 @@ async function fetcher(url: string, mockResponse?: any) {
         return mockResponse;
     }
 
-    const res = await fetch(url);
-    if (!res.ok) {
-        const errorData = await res.json().catch(() => ({ error: 'An unknown error occurred' }));
-        // Finnhub API returns errors in an `error` property.
-        throw new Error(errorData.error || 'An error occurred while fetching the data.');
+    try {
+        const res = await fetch(url);
+        if (!res.ok) {
+            const errorData = await res.json().catch(() => ({ error: 'An unknown error occurred' }));
+            // Finnhub API returns errors in an `error` property.
+            throw new Error(errorData.error || 'An error occurred while fetching the data.');
+        }
+        return res.json();
+    } catch (error: any) {
+         if (error.message.includes("You don't have access to this resource")) {
+            console.warn(`Finnhub premium feature access error for URL: ${url.split('&token=')[0]}. Returning mock data.`);
+            return mockResponse;
+        }
+        // Re-throw other unexpected errors
+        throw error;
     }
-    return res.json();
 }
 
 export async function getQuote(symbol: string) {
@@ -67,17 +76,7 @@ export async function getStockNews(symbol: string) {
 
 export async function getStockCandles(symbol: string, resolution: string, from: number, to: number) {
   const mock = { s: 'no_data' };
-  try {
-    return await fetcher(`${BASE_URL}/stock/candle?symbol=${symbol}&resolution=${resolution}&from=${from}&to=${to}&token=${API_KEY}`, mock);
-  } catch (error: any) {
-    // Handle specific premium feature access error gracefully
-    if (error.message.includes("You don't have access to this resource")) {
-      console.warn("Stock candle data is likely a premium Finnhub feature. Returning empty data.");
-      return mock;
-    }
-    // Re-throw other errors
-    throw error;
-  }
+  return fetcher(`${BASE_URL}/stock/candle?symbol=${symbol}&resolution=${resolution}&from=${from}&to=${to}&token=${API_KEY}`, mock);
 }
 
 export async function getMarketStatus(exchange: string) {
