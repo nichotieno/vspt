@@ -4,6 +4,7 @@ import './globals.css';
 import { PortfolioProvider } from '@/contexts/PortfolioContext';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/stock-sim/ThemeProvider';
+import { AuthProvider } from '@/contexts/AuthContext';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -26,10 +27,12 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <PortfolioProvider>
-            {children}
-            <Toaster />
-          </PortfolioProvider>
+          <AuthProvider>
+            <PortfolioProvider>
+              {children}
+              <Toaster />
+            </PortfolioProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

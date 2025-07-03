@@ -79,3 +79,8 @@ export async function getStockCandles(symbol: string, resolution: string, from: 
     throw error;
   }
 }
+
+export async function getMarketStatus(exchange: string) {
+    const mock = { isOpen: true, holiday: null };
+    return fetcher(`${BASE_URL}/stock/market-status?exchange=${exchange}&token=${API_KEY}`, mock);
+}

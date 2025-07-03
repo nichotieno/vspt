@@ -37,6 +37,7 @@ export interface StockNews {
 }
 
 export interface PortfolioItem {
+  id?: string;
   ticker: string;
   quantity: number;
   avgCost: number;
@@ -47,6 +48,7 @@ export interface PortfolioItem {
 }
 
 export interface Transaction {
+  id?: string;
   ticker: string;
   type: 'BUY' | 'SELL';
   quantity: number;
@@ -62,4 +64,15 @@ export interface Candle {
     s: string;
     t: number[];
     v: number[];
+}
+
+export interface User {
+  uid: string;
+  email: string | null;
+}
+
+export interface PortfolioHistoryItem {
+  id?: string;
+  date: string;
+  value: number;
 }
