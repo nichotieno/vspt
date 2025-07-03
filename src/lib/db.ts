@@ -64,6 +64,17 @@ function initializeDb() {
             FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
         );
     `);
+    
+    // Simple migration: Add password column to users table if it doesn't exist
+    const userTableInfo = db.prepare("PRAGMA table_info(users)").all();
+    const passwordColumnExists = userTableInfo.some((column: any) => column.name === 'password');
+
+    if (!passwordColumnExists) {
+        console.log("Applying migration: Adding 'password' column to 'users' table.");
+        // We add a default value to avoid errors on existing rows.
+        db.exec("ALTER TABLE users ADD COLUMN password TEXT NOT NULL DEFAULT 'changeme'");
+    }
+
     console.log("Database initialized.");
 }
 
