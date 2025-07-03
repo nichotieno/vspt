@@ -13,6 +13,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 
 export default function SignupPage() {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -33,7 +34,7 @@ export default function SignupPage() {
     }
     setLoading(true);
     try {
-      await signUp(email, password);
+      await signUp(email, password, name);
       toast({
         title: "Account Created",
         description: "You have successfully signed up! Redirecting to login...",
@@ -64,6 +65,17 @@ export default function SignupPage() {
             </p>
           </div>
           <form onSubmit={handleSignup} className="grid gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="name">Name</Label>
+              <Input
+                id="name"
+                type="text"
+                placeholder="John Doe"
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </div>
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
               <Input

@@ -8,8 +8,9 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   logIn: (email: string, pass: string) => Promise<any>;
-  signUp: (email: string, pass: string) => Promise<any>;
+  signUp: (email: string, pass: string, name: string) => Promise<any>;
   logOut: () => Promise<any>;
+  setUser: React.Dispatch<React.SetStateAction<User | null>>;
 }
 
 export const AuthContext = createContext<AuthContextType | null>(null);
@@ -45,8 +46,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const signUp = async (email: string, pass: string) => {
-    const result = await createUserInDb(email, pass);
+  const signUp = async (email: string, pass: string, name: string) => {
+    const result = await createUserInDb(email, name, pass);
     if (result.success) {
       // Don't auto-login, let them go to the login page.
       return result;
@@ -66,6 +67,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     logIn,
     signUp,
     logOut,
+    setUser
   };
 
   return <AuthContext.Provider value={value}>{!loading && children}</AuthContext.Provider>;

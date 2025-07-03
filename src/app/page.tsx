@@ -172,6 +172,9 @@ export default function Home() {
               <div className="mt-2 text-sm text-muted-foreground">
                 <p>Available Cash: {formatCurrency(cash)}</p>
               </div>
+               <div className="mt-4">
+                 <PortfolioChart data={portfolioHistory} />
+              </div>
             </CardContent>
           </Card>
         </div>

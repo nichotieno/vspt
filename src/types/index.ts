@@ -69,6 +69,8 @@ export interface Candle {
 export interface User {
   uid: string;
   email: string | null;
+  name: string | null;
+  investmentStrategy: string | null;
 }
 
 export interface PortfolioHistoryItem {

@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { generateStockNote } from '@/ai/flows/generate-stock-note';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from '@/hooks/use-auth';
 import { Sparkles } from 'lucide-react';
 
 interface AIGeneratedNoteProps {
@@ -20,17 +21,24 @@ interface AIGeneratedNoteProps {
 }
 
 export default function AIGeneratedNote({ stock }: AIGeneratedNoteProps) {
+  const { user } = useAuth();
   const [investmentStrategy, setInvestmentStrategy] = useState('');
   const [generatedNote, setGeneratedNote] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (user?.investmentStrategy) {
+      setInvestmentStrategy(user.investmentStrategy);
+    }
+  }, [user]);
 
   const handleGenerateNote = async () => {
     if (!investmentStrategy) {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Please enter your investment strategy.',
+        description: 'Please enter your investment strategy, or set a default one in your profile.',
       });
       return;
     }
@@ -71,7 +79,7 @@ export default function AIGeneratedNote({ stock }: AIGeneratedNoteProps) {
           <Label htmlFor="investment-strategy">Your Investment Strategy</Label>
           <Textarea
             id="investment-strategy"
-            placeholder="e.g., Long-term growth, value investing, dividend income..."
+            placeholder="e.g., Long-term growth, value investing... Set a default in your profile."
             value={investmentStrategy}
             onChange={(e) => setInvestmentStrategy(e.target.value)}
           />

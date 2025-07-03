@@ -7,12 +7,12 @@ import { getQuote } from '@/lib/finnhub';
 import { randomUUID } from 'crypto';
 
 // User Actions
-export async function createUserInDb(email: string, password_DO_NOT_STORE_IN_PLAINTEXT: string) {
+export async function createUserInDb(email: string, name: string, password_DO_NOT_STORE_IN_PLAINTEXT: string) {
     try {
         const id = randomUUID();
-        const stmt = db.prepare('INSERT INTO users (id, email, password, cash) VALUES (?, ?, ?, ?)');
+        const stmt = db.prepare('INSERT INTO users (id, email, name, password, cash) VALUES (?, ?, ?, ?, ?)');
         // In a real application, you should hash the password before storing it.
-        stmt.run(id, email, password_DO_NOT_STORE_IN_PLAINTEXT, 100000);
+        stmt.run(id, email, name, password_DO_NOT_STORE_IN_PLAINTEXT, 100000);
         return { success: true };
     } catch (error: any) {
         if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
@@ -24,8 +24,8 @@ export async function createUserInDb(email: string, password_DO_NOT_STORE_IN_PLA
 
 export async function logInUser(email: string, password_DO_NOT_STORE_IN_PLAINTEXT: string): Promise<{ success: boolean; user?: User; error?: string }> {
     try {
-        const stmt = db.prepare('SELECT id, email, password FROM users WHERE email = ?');
-        const userRow = stmt.get(email) as { id: string; email: string; password: string } | undefined;
+        const stmt = db.prepare('SELECT id, email, password, name, investment_strategy FROM users WHERE email = ?');
+        const userRow = stmt.get(email) as { id: string; email: string; password: string, name: string, investment_strategy: string } | undefined;
 
         if (!userRow) {
             return { success: false, error: 'Invalid email or password.' };
@@ -35,8 +35,15 @@ export async function logInUser(email: string, password_DO_NOT_STORE_IN_PLAINTEX
         if (userRow.password !== password_DO_NOT_STORE_IN_PLAINTEXT) {
             return { success: false, error: 'Invalid email or password.' };
         }
+        
+        const user: User = { 
+            uid: userRow.id, 
+            email: userRow.email,
+            name: userRow.name,
+            investmentStrategy: userRow.investment_strategy,
+        };
 
-        return { success: true, user: { uid: userRow.id, email: userRow.email } };
+        return { success: true, user };
     } catch (error: any) {
         return { success: false, error: error.message };
     }
@@ -44,8 +51,8 @@ export async function logInUser(email: string, password_DO_NOT_STORE_IN_PLAINTEX
 
 export async function getUserData(userId: string) {
     try {
-        const userStmt = db.prepare('SELECT cash FROM users WHERE id = ?');
-        const user = userStmt.get(userId) as { cash: number } | undefined;
+        const userStmt = db.prepare('SELECT cash, name, investment_strategy as investmentStrategy FROM users WHERE id = ?');
+        const user = userStmt.get(userId) as { cash: number, name: string, investmentStrategy: string } | undefined;
 
         const portfolioStmt = db.prepare('SELECT ticker, quantity, avg_cost as avgCost FROM portfolio WHERE user_id = ?');
         const portfolio = portfolioStmt.all(userId) as PortfolioItem[];
@@ -62,6 +69,8 @@ export async function getUserData(userId: string) {
         
         return {
             cash: user?.cash ?? 100000,
+            name: user?.name,
+            investmentStrategy: user?.investmentStrategy,
             portfolio,
             watchlist,
             transactions,
@@ -70,6 +79,18 @@ export async function getUserData(userId: string) {
     } catch (error: any) {
         console.error('Error fetching user data:', error.message);
         throw new Error('Failed to fetch user data.');
+    }
+}
+
+export async function updateUserProfile(userId: string, name: string, investmentStrategy: string) {
+    try {
+        const stmt = db.prepare('UPDATE users SET name = ?, investment_strategy = ? WHERE id = ?');
+        stmt.run(name, investmentStrategy, userId);
+        revalidatePath('/profile');
+        revalidatePath('/'); // So AI note gets updated strategy if visible
+        return { success: true };
+    } catch (error: any) {
+        return { success: false, error: error.message };
     }
 }
 

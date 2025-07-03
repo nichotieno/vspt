@@ -21,8 +21,10 @@ function initializeDb() {
     db.exec(`
         CREATE TABLE IF NOT EXISTS users (
             id TEXT PRIMARY KEY,
+            name TEXT NOT NULL DEFAULT '',
             email TEXT NOT NULL UNIQUE,
             password TEXT NOT NULL,
+            investment_strategy TEXT NOT NULL DEFAULT '',
             cash REAL NOT NULL DEFAULT 100000,
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
@@ -65,14 +67,23 @@ function initializeDb() {
         );
     `);
     
-    // Simple migration: Add password column to users table if it doesn't exist
+    // Simple migration runner
     const userTableInfo = db.prepare("PRAGMA table_info(users)").all();
-    const passwordColumnExists = userTableInfo.some((column: any) => column.name === 'password');
+    const columnNames = userTableInfo.map((col: any) => col.name);
 
-    if (!passwordColumnExists) {
+    if (!columnNames.includes('password')) {
         console.log("Applying migration: Adding 'password' column to 'users' table.");
-        // We add a default value to avoid errors on existing rows.
         db.exec("ALTER TABLE users ADD COLUMN password TEXT NOT NULL DEFAULT 'changeme'");
+    }
+    
+    if (!columnNames.includes('name')) {
+        console.log("Applying migration: Adding 'name' column to 'users' table.");
+        db.exec("ALTER TABLE users ADD COLUMN name TEXT NOT NULL DEFAULT ''");
+    }
+
+    if (!columnNames.includes('investment_strategy')) {
+        console.log("Applying migration: Adding 'investment_strategy' column to 'users' table.");
+        db.exec("ALTER TABLE users ADD COLUMN investment_strategy TEXT NOT NULL DEFAULT ''");
     }
 
     console.log("Database initialized.");
