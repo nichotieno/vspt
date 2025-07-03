@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { createContext, useState, useEffect, useCallback, ReactNode } from 'react';
@@ -11,6 +12,13 @@ import {
     sellStockAction, 
     toggleWatchlistAction 
 } from '@/app/actions';
+
+/**
+ * @file This file defines the portfolio context for the application.
+ * It provides portfolio data (holdings, cash, watchlist, etc.), loading status,
+ * and functions for managing the portfolio (buy, sell, toggle watchlist)
+ * to all components wrapped within the PortfolioProvider.
+ */
 
 interface PortfolioContextType {
   portfolio: PortfolioItem[];
@@ -28,6 +36,10 @@ interface PortfolioContextType {
 
 export const PortfolioContext = createContext<PortfolioContextType | null>(null);
 
+/**
+ * Provides portfolio state and actions to its children.
+ * This provider is responsible for fetching and managing all data related to a user's portfolio.
+ */
 export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -39,6 +51,7 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
   const [portfolioHistory, setPortfolioHistory] = useState<PortfolioHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Resets all portfolio state to its initial values.
   const resetState = () => {
       setPortfolio([]);
       setWatchlist([]);
@@ -48,6 +61,7 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
       setLoading(true);
   };
   
+  // Fetches all user portfolio data from the server.
   const fetchData = useCallback(async () => {
     if (!user) {
         resetState();
@@ -70,11 +84,12 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
     }
   }, [user, toast]);
 
+  // Initial data fetch when user changes.
   useEffect(() => {
     fetchData();
   }, [fetchData]);
   
-  // Effect to update live prices for portfolio items
+  // Effect to periodically update live prices for portfolio items.
   useEffect(() => {
     if (!user || portfolio.length === 0) return;
 
@@ -100,11 +115,21 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [portfolio.length, user]);
 
-
+  /**
+   * Calculates the total market value of all holdings in the portfolio.
+   * @param portfolioItems An array of portfolio items.
+   * @returns The total value as a number.
+   */
   const getPortfolioValue = useCallback((portfolioItems: PortfolioItem[]) => {
     return portfolioItems.reduce((total, item) => total + (item.currentPrice || item.avgCost) * item.quantity, 0);
   }, []);
 
+  /**
+   * Initiates a stock purchase by calling the server action and refetches data on success.
+   * @param ticker The stock ticker.
+   * @param quantity The number of shares to buy.
+   * @param price The price per share.
+   */
   const buyStock = async (ticker: string, quantity: number, price: number) => {
     if (!user) return;
     const result = await buyStockAction(user.uid, ticker, quantity, price);
@@ -116,6 +141,12 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
     }
   };
 
+  /**
+   * Initiates a stock sale by calling the server action and refetches data on success.
+   * @param ticker The stock ticker.
+   * @param quantity The number of shares to sell.
+   * @param price The price per share.
+   */
   const sellStock = async (ticker: string, quantity: number, price: number) => {
     if (!user) return;
     const result = await sellStockAction(user.uid, ticker, quantity, price);
@@ -127,6 +158,10 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
     }
   };
 
+  /**
+   * Adds or removes a stock from the watchlist and refetches data on success.
+   * @param ticker The stock ticker to toggle.
+   */
   const toggleWatchlist = async (ticker: string) => {
     if (!user) return;
     const isWatched = watchlist.includes(ticker);
@@ -138,6 +173,11 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
     }
   };
 
+  /**
+   * Calculates the portfolio's gain or loss for the current day.
+   * @param portfolioItems An array of portfolio items.
+   * @returns An object containing the dollar value change and percentage change.
+   */
   const getTodaysGainLoss = useCallback((portfolioItems: PortfolioItem[]) => {
       if(portfolioItems.length === 0) return { value: 0, percent: 0 };
       const totalValue = getPortfolioValue(portfolioItems);

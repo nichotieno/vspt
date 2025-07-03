@@ -1,3 +1,4 @@
+
 'use server';
 
 import { db } from '@/lib/db';
@@ -8,6 +9,14 @@ import { randomUUID } from 'crypto';
 import bcrypt from 'bcrypt';
 
 // User Actions
+
+/**
+ * Creates a new user in the database.
+ * @param email - The user's email address.
+ * @param name - The user's full name.
+ * @param password - The user's plain-text password.
+ * @returns An object indicating success or failure.
+ */
 export async function createUserInDb(email: string, name: string, password: string) {
     try {
         const id = randomUUID();
@@ -24,6 +33,12 @@ export async function createUserInDb(email: string, name: string, password: stri
     }
 }
 
+/**
+ * Authenticates a user based on email and password.
+ * @param email - The user's email address.
+ * @param password - The user's plain-text password.
+ * @returns A promise that resolves to an object containing success status, the user object if successful, or an error message.
+ */
 export async function logInUser(email: string, password: string): Promise<{ success: boolean; user?: User; error?: string }> {
     try {
         const stmt = db.prepare('SELECT id, email, password, name, investment_strategy FROM users WHERE email = ?');
@@ -51,6 +66,11 @@ export async function logInUser(email: string, password: string): Promise<{ succ
     }
 }
 
+/**
+ * Fetches all relevant data for a given user, including cash, portfolio, watchlist, and transaction history.
+ * @param userId - The unique identifier for the user.
+ * @returns A promise that resolves to an object containing all user-related data.
+ */
 export async function getUserData(userId: string) {
     try {
         const userStmt = db.prepare('SELECT cash, name, investment_strategy as investmentStrategy FROM users WHERE id = ?');
@@ -84,6 +104,13 @@ export async function getUserData(userId: string) {
     }
 }
 
+/**
+ * Updates a user's profile information.
+ * @param userId - The user's unique identifier.
+ * @param name - The user's new name.
+ * @param investmentStrategy - The user's new investment strategy.
+ * @returns An object indicating success or failure.
+ */
 export async function updateUserProfile(userId: string, name: string, investmentStrategy: string) {
     try {
         const stmt = db.prepare('UPDATE users SET name = ?, investment_strategy = ? WHERE id = ?');
@@ -99,6 +126,11 @@ export async function updateUserProfile(userId: string, name: string, investment
 
 // Transaction Actions
 
+/**
+ * Calculates the current total value of a user's portfolio (holdings + cash)
+ * and records it in the portfolio_history table.
+ * @param userId - The unique identifier for the user.
+ */
 async function addPortfolioHistoryRecord(userId: string) {
     // This function calculates the current portfolio value and adds a record.
     // It's called after a buy or sell transaction.
@@ -125,6 +157,15 @@ async function addPortfolioHistoryRecord(userId: string) {
     stmt.run(userId, new Date().toISOString(), totalValue);
 }
 
+/**
+ * Executes a buy transaction for a user.
+ * It updates user's cash, adds or updates a portfolio holding, and records the transaction.
+ * @param userId - The unique identifier for the user.
+ * @param ticker - The stock ticker symbol to buy.
+ * @param quantity - The number of shares to buy.
+ * @param price - The price per share.
+ * @returns An object indicating success or failure.
+ */
 export async function buyStockAction(userId: string, ticker: string, quantity: number, price: number) {
     const cost = quantity * price;
 
@@ -167,6 +208,15 @@ export async function buyStockAction(userId: string, ticker: string, quantity: n
     }
 }
 
+/**
+ * Executes a sell transaction for a user.
+ * It updates user's cash, updates or removes a portfolio holding, and records the transaction.
+ * @param userId - The unique identifier for the user.
+ * @param ticker - The stock ticker symbol to sell.
+ * @param quantity - The number of shares to sell.
+ * @param price - The price per share.
+ * @returns An object indicating success or failure.
+ */
 export async function sellStockAction(userId: string, ticker: string, quantity: number, price: number) {
     const proceeds = quantity * price;
 
@@ -205,6 +255,13 @@ export async function sellStockAction(userId: string, ticker: string, quantity: 
     }
 }
 
+/**
+ * Adds or removes a stock from a user's watchlist.
+ * @param userId - The unique identifier for the user.
+ * @param ticker - The stock ticker symbol to add or remove.
+ * @param isWatched - A boolean indicating if the stock is currently on the watchlist.
+ * @returns An object indicating success or failure.
+ */
 export async function toggleWatchlistAction(userId: string, ticker: string, isWatched: boolean) {
     try {
         if (isWatched) {

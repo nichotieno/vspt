@@ -1,3 +1,4 @@
+
 import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
@@ -15,7 +16,12 @@ export const db = new Database(dbPath);
 // Enable WAL mode for better concurrency
 db.pragma('journal_mode = WAL');
 
-
+/**
+ * Initializes the database schema.
+ * This function creates all necessary tables if they don't already exist.
+ * It also includes a simple migration runner to add new columns to existing tables,
+ * ensuring the schema is up-to-date when the application starts.
+ */
 function initializeDb() {
     console.log("Initializing database schema...");
     db.exec(`
@@ -67,7 +73,7 @@ function initializeDb() {
         );
     `);
     
-    // Simple migration runner
+    // Simple migration runner: checks for the existence of columns and adds them if missing.
     const userTableInfo = db.prepare("PRAGMA table_info(users)").all();
     const columnNames = userTableInfo.map((col: any) => col.name);
 

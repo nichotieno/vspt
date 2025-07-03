@@ -4,6 +4,13 @@
 const API_KEY = process.env.FINNHUB_API_KEY;
 const BASE_URL = 'https://finnhub.io/api/v1';
 
+/**
+ * Generic fetcher function for the Finnhub API.
+ * Handles API key injection, error handling, and returns mock data if the API key is missing or invalid.
+ * @param url - The Finnhub API endpoint URL to fetch.
+ * @param mockResponse - The mock response to return in case of an API key issue or fetch error.
+ * @returns A promise that resolves to the JSON response from the API or the mock response.
+ */
 async function fetcher(url: string, mockResponse?: any) {
     if (!API_KEY) {
         console.error("Finnhub API key is not set. Please set FINNHUB_API_KEY. Using mock data.");
@@ -33,11 +40,21 @@ async function fetcher(url: string, mockResponse?: any) {
     }
 }
 
+/**
+ * Fetches the latest quote for a given stock symbol.
+ * @param symbol - The stock ticker symbol.
+ * @returns A promise that resolves to the stock quote data.
+ */
 export async function getQuote(symbol: string) {
     const mock = { c: 0, d: 0, dp: 0, h: 0, l: 0, o: 0, pc: 0, t: 0 };
     return fetcher(`${BASE_URL}/quote?symbol=${symbol}&token=${API_KEY}`, mock);
 }
 
+/**
+ * Fetches the company profile for a given stock symbol.
+ * @param symbol - The stock ticker symbol.
+ * @returns A promise that resolves to the company profile data.
+ */
 export async function getCompanyProfile(symbol: string) {
     const mock = { 
         country: 'US', 
@@ -64,11 +81,21 @@ export async function getCompanyProfile(symbol: string) {
     };
 }
 
+/**
+ * Searches for stock symbols matching a given query.
+ * @param query - The search query.
+ * @returns A promise that resolves to a list of matching symbols.
+ */
 export async function searchSymbols(query: string) {
     const mock = { result: [] };
     return fetcher(`${BASE_URL}/search?q=${query}&token=${API_KEY}`, mock);
 }
 
+/**
+ * Fetches recent company news for a given stock symbol.
+ * @param symbol - The stock ticker symbol.
+ * @returns A promise that resolves to a list of news articles.
+ */
 export async function getStockNews(symbol: string) {
     const today = new Date();
     const oneWeekAgo = new Date();
@@ -79,11 +106,24 @@ export async function getStockNews(symbol: string) {
     return fetcher(`${BASE_URL}/company-news?symbol=${symbol}&from=${from}&to=${to}&token=${API_KEY}`, mock);
 }
 
+/**
+ * Fetches historical candle data for a stock.
+ * @param symbol - The stock ticker symbol.
+ * @param resolution - The candle resolution ('D' for daily, 'W' for weekly, 'M' for monthly).
+ * @param from - The start date as a UNIX timestamp.
+ * @param to - The end date as a UNIX timestamp.
+ * @returns A promise that resolves to the candle data.
+ */
 export async function getStockCandles(symbol: string, resolution: string, from: number, to: number) {
   const mock = { s: 'no_data' };
   return fetcher(`${BASE_URL}/stock/candle?symbol=${symbol}&resolution=${resolution}&from=${from}&to=${to}&token=${API_KEY}`, mock);
 }
 
+/**
+ * Fetches a list of all stock symbols for a given exchange.
+ * @param exchange - The stock exchange code (e.g., 'US').
+ * @returns A promise that resolves to a list of stock symbols.
+ */
 export async function getStockSymbols(exchange: string) {
     const mock = [
         { "currency": "USD", "description": "APPLE INC", "displaySymbol": "AAPL", "figi": "BBG000B9XRY4", "mic": "XNAS", "symbol": "AAPL", "type": "Common Stock" },
@@ -102,6 +142,11 @@ export async function getStockSymbols(exchange: string) {
     return [];
 }
 
+/**
+ * Fetches the current market status for a given exchange.
+ * @param exchange - The stock exchange code (e.g., 'US').
+ * @returns A promise that resolves to the market status data.
+ */
 export async function getMarketStatus(exchange: string) {
     const mock = { isOpen: true, holiday: null };
     return fetcher(`${BASE_URL}/stock/market-status?exchange=${exchange}&token=${API_KEY}`, mock);
