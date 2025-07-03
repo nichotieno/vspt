@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { BarChart2, TrendingUp, TrendingDown } from 'lucide-react';
 
 import { useAuth } from '@/hooks/use-auth';
-import { getStockSymbols, getQuote } from '@/lib/finnhub';
+import { getStockSymbols, getQuote, getCompanyProfile } from '@/lib/finnhub';
 import type { StockQuote } from '@/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent } from '@/components/ui/card';
@@ -78,11 +78,14 @@ export default function DashboardPage() {
 
         const stocksData = await Promise.all(
             symbolsToFetch.map(async (s) => {
-                const quote = await getQuote(s.symbol);
+                 const [quote, profile] = await Promise.all([
+                    getQuote(s.symbol),
+                    getCompanyProfile(s.symbol)
+                ]);
                 return {
                     symbol: s.symbol,
                     description: s.description,
-                    logo: `https://static.finnhub.io/logo/${s.symbol.split('.')[0]}.png`,
+                    logo: profile.logo,
                     quote,
                 };
             })
