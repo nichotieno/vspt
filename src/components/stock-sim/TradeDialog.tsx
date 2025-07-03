@@ -61,10 +61,16 @@ export function TradeDialog({ stock, type }: TradeDialogProps) {
         <DialogHeader>
           <DialogTitle>{type} {stock.ticker}</DialogTitle>
           <DialogDescription>
-            {stock.name} - Current Price: ${stock.price.toFixed(2)}
+            Place an order for {stock.name}.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label className="text-right">
+              Price
+            </Label>
+            <div className="col-span-3 font-semibold text-lg">${stock.price.toFixed(2)}</div>
+          </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="quantity" className="text-right">
               Shares
@@ -76,6 +82,7 @@ export function TradeDialog({ stock, type }: TradeDialogProps) {
               onChange={(e) => setQuantity(e.target.value)}
               className="col-span-3"
               placeholder="0"
+              autoFocus
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
