@@ -8,7 +8,7 @@ import { BarChart2, TrendingUp, TrendingDown } from 'lucide-react';
 
 import { useAuth } from '@/hooks/use-auth';
 import { getStockSymbols, getQuote, getCompanyProfile } from '@/lib/finnhub';
-import type { StockQuote } from '@/types';
+import type { StockData } from '@/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -205,8 +205,10 @@ export default function DashboardPage() {
                                         <TableRow 
                                             key={stock.symbol} 
                                             ref={index === stocks.length - 1 ? lastStockElementRef : null}
-                                            className="cursor-pointer"
+                                            className="cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-lg"
                                             onClick={() => handleSelectStock(stock.symbol)}
+                                            onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSelectStock(stock.symbol)}
+                                            tabIndex={0}
                                         >
                                             <TableCell>
                                                 <div className="flex items-center gap-3">
@@ -223,7 +225,7 @@ export default function DashboardPage() {
                                             <TableCell className="text-right font-medium">
                                                 {stock.quote?.c != null ? formatCurrency(stock.quote.c) : <Skeleton className="h-4 w-20 float-right" />}
                                             </TableCell>
-                                            <TableCell className={`text-right ${stock.quote?.dp != null && stock.quote.dp >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                            <TableCell className={`text-right ${stock.quote?.dp != null && stock.quote.dp >= 0 ? 'text-success' : 'text-destructive'}`}>
                                                 {stock.quote?.dp != null ? (
                                                     <div className="flex items-center justify-end gap-1">
                                                         {stock.quote.dp >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}

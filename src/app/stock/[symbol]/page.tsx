@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { BarChart2, Briefcase, Download, Eye, FileClock, Newspaper, Search, ArrowDownUp, TrendingDown, TrendingUp, X } from 'lucide-react';
+import { BarChart2, ArrowDownUp, Download, Eye, FileClock, Newspaper, TrendingDown, TrendingUp, X } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -145,6 +145,13 @@ export default function StockDetailPage() {
     );
   }
 
+  const SortableHeader = ({ sortKey, children }: { sortKey: SortKey, children: React.ReactNode }) => (
+    <Button variant="ghost" onClick={() => requestSort(sortKey)} className="w-full h-auto p-0 font-medium hover:bg-transparent justify-end">
+        {children}
+        <ArrowDownUp className="ml-2 h-3 w-3" />
+    </Button>
+  );
+
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
       <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
@@ -187,12 +194,12 @@ export default function StockDetailPage() {
                     </Avatar>
                     <div>
                       <CardTitle>{profile.name} ({profile.ticker})</CardTitle>
-                      <p className="text-sm text-muted-foreground">{profile.finnhubIndustry}</p>
+                      <CardDescription>{profile.finnhubIndustry}</CardDescription>
                     </div>
                   </div>
                   <div className="text-right">
                     <div className="text-2xl font-bold">{formatCurrency(quote.c)}</div>
-                    <div className={`flex items-center justify-end text-sm ${quote.d >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                    <div className={`flex items-center justify-end text-sm ${quote.d >= 0 ? 'text-success' : 'text-destructive'}`}>
                       {quote.d >= 0 ? <TrendingUp className="mr-1 h-4 w-4" /> : <TrendingDown className="mr-1 h-4 w-4" />}
                       {formatCurrency(quote.d)} ({quote.dp.toFixed(2)}%)
                     </div>
@@ -260,7 +267,7 @@ export default function StockDetailPage() {
             </CardHeader>
             <CardContent>
               <div className="text-4xl font-bold">{formatCurrency(portfolioValue + cash)}</div>
-              <div className={`flex items-center text-sm ${todaysGainLoss.value >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+              <div className={`flex items-center text-sm ${todaysGainLoss.value >= 0 ? 'text-success' : 'text-destructive'}`}>
                 {todaysGainLoss.value >= 0 ? <TrendingUp className="mr-1 h-4 w-4" /> : <TrendingDown className="mr-1 h-4 w-4" />}
                 <span>{formatCurrency(todaysGainLoss.value)} ({todaysGainLoss.percent.toFixed(2)}%) Today</span>
               </div>
@@ -298,14 +305,16 @@ export default function StockDetailPage() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead onClick={() => requestSort('ticker')} className="cursor-pointer">
-                            <div className="flex items-center">Asset <ArrowDownUp className="ml-2 h-3 w-3" /></div>
+                          <TableHead>
+                             <Button variant="ghost" onClick={() => requestSort('ticker')} className="w-full h-auto p-0 font-medium hover:bg-transparent justify-start">
+                                Asset <ArrowDownUp className="ml-2 h-3 w-3" />
+                            </Button>
                           </TableHead>
-                          <TableHead onClick={() => requestSort('value')} className="text-right cursor-pointer">
-                             <div className="flex items-center justify-end">Value <ArrowDownUp className="ml-2 h-3 w-3" /></div>
+                          <TableHead className="text-right">
+                            <SortableHeader sortKey="value">Value</SortableHeader>
                           </TableHead>
-                          <TableHead onClick={() => requestSort('gainLoss')} className="text-right cursor-pointer">
-                             <div className="flex items-center justify-end">Gain <ArrowDownUp className="ml-2 h-3 w-3" /></div>
+                          <TableHead className="text-right">
+                             <SortableHeader sortKey="gainLoss">Gain</SortableHeader>
                           </TableHead>
                         </TableRow>
                       </TableHeader>
@@ -316,20 +325,26 @@ export default function StockDetailPage() {
                           const gainLoss = currentValue - totalCost;
                           const gainLossPercent = totalCost > 0 ? (gainLoss / totalCost) * 100 : 0;
                           return (
-                            <TableRow key={item.ticker} onClick={() => handleSelectStock(item.ticker)} className="cursor-pointer">
+                            <TableRow 
+                                key={item.ticker} 
+                                onClick={() => handleSelectStock(item.ticker)} 
+                                onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSelectStock(item.ticker)}
+                                tabIndex={0}
+                                className="cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-lg"
+                            >
                               <TableCell>
                                 <div className="font-medium">{item.ticker}</div>
                                 <div className="text-xs text-muted-foreground">{item.quantity} shares</div>
                               </TableCell>
                               <TableCell className="text-right">
                                 <div>{formatCurrency(currentValue)}</div>
-                                <div className={`text-xs ${item.changePercent && item.changePercent >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                <div className={`text-xs ${item.changePercent && item.changePercent >= 0 ? 'text-success' : 'text-destructive'}`}>
                                   {item.changePercent?.toFixed(2) ?? '0.00'}%
                                 </div>
                               </TableCell>
                               <TableCell className="text-right">
-                                <div className={`${gainLoss >= 0 ? 'text-green-500' : 'text-red-500'}`}>{formatCurrency(gainLoss)}</div>
-                                <div className={`text-xs ${gainLoss >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                <div className={`${gainLoss >= 0 ? 'text-success' : 'text-destructive'}`}>{formatCurrency(gainLoss)}</div>
+                                <div className={`text-xs ${gainLoss >= 0 ? 'text-success' : 'text-destructive'}`}>
                                   {gainLossPercent.toFixed(2)}%
                                 </div>
                               </TableCell>
@@ -379,5 +394,3 @@ export default function StockDetailPage() {
     </div>
   );
 }
-
-    

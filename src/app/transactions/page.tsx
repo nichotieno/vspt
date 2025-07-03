@@ -3,11 +3,11 @@
 import { useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Download, FileClock } from 'lucide-react';
+import { ArrowLeft, Download } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { usePortfolio } from '@/hooks/use-portfolio';
 import { downloadAsCSV } from '@/lib/utils';
@@ -83,7 +83,7 @@ export default function TransactionsPage() {
                                             <TableCell className="font-medium">{new Date(t.date).toLocaleDateString()}</TableCell>
                                             <TableCell>{t.ticker}</TableCell>
                                             <TableCell>
-                                                <Badge variant={t.type === 'BUY' ? 'default' : 'destructive'} className={t.type === 'BUY' ? 'bg-green-600' : 'bg-red-600'}>
+                                                <Badge variant={t.type === 'BUY' ? 'success' : 'destructive'}>
                                                     {t.type}
                                                 </Badge>
                                             </TableCell>
