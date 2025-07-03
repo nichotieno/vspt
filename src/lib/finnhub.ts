@@ -17,7 +17,7 @@ async function fetcher(url: string, mockResponse?: any) {
     try {
         const res = await fetch(url);
         if (!res.ok) {
-            const errorData = await res.json().catch(() => ({}));
+            const errorData = await res.json().catch(() => ({ error: 'An unknown error occurred' }));
             const errorMessage = errorData.error || `HTTP error! status: ${res.status}`;
             throw new Error(errorMessage);
         }
