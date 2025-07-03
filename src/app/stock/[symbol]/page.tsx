@@ -33,7 +33,7 @@ export default function StockDetailPage({ params }: { params: { symbol: string }
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
 
-  const [selectedStock, setSelectedStock] = useState<string>(params.symbol.toUpperCase());
+  const selectedStock = params.symbol.toUpperCase();
   const [quote, setQuote] = useState<StockQuote | null>(null);
   const [profile, setProfile] = useState<CompanyProfile | null>(null);
   const [news, setNews] = useState<StockNews[]>([]);
@@ -51,10 +51,6 @@ export default function StockDetailPage({ params }: { params: { symbol: string }
       router.push('/login');
     }
   }, [user, authLoading, router]);
-  
-  useEffect(() => {
-    setSelectedStock(params.symbol.toUpperCase());
-  }, [params.symbol]);
 
   useEffect(() => {
     if (selectedStock && user) {
