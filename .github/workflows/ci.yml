@@ -39,3 +39,15 @@ jobs:
         run: npm run build
         env:
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY || 'changeme' }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          load: true # Only build the image and load it to the runner's docker daemon
+          tags: stocksim-app:ci
+          build-args: |
+            FINNHUB_API_KEY=${{ secrets.FINNHUB_API_KEY || 'changeme' }}
