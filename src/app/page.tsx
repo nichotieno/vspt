@@ -156,11 +156,103 @@ export default function Home() {
           <UserNav />
         </div>
       </header>
-      <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:grid-cols-3 lg:grid-cols-4">
-        <div className="grid auto-rows-max items-start gap-4 md:col-span-1 lg:col-span-1">
+      <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:grid-cols-3">
+        {/* Left Column - Stock Details */}
+        <div className="grid auto-rows-max items-start gap-4 md:col-span-2">
+          {loading ? (
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <Skeleton className="h-8 w-1/2" />
+                <Skeleton className="h-8 w-1/4" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-8 w-1/3 mb-2" />
+                <Skeleton className="h-4 w-1/4" />
+                <div className="mt-4">
+                  <Skeleton className="h-64 w-full" />
+                </div>
+              </CardContent>
+            </Card>
+          ) : profile && quote ? (
+            <>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <div className="flex items-center gap-4">
+                    <Avatar className="h-12 w-12">
+                      <AvatarImage src={profile.logo} alt={profile.name} />
+                      <AvatarFallback>{profile.ticker}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <CardTitle>{profile.name} ({profile.ticker})</CardTitle>
+                      <p className="text-sm text-muted-foreground">{profile.finnhubIndustry}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold">{formatCurrency(quote.c)}</div>
+                    <div className={`flex items-center justify-end text-sm ${quote.d >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                      {quote.d >= 0 ? <TrendingUp className="mr-1 h-4 w-4" /> : <TrendingDown className="mr-1 h-4 w-4" />}
+                      {formatCurrency(quote.d)} ({quote.dp.toFixed(2)}%)
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex gap-2">
+                    <TradeDialog stock={{ ticker: profile.ticker, name: profile.name, price: quote.c }} type="BUY" />
+                    <TradeDialog stock={{ ticker: profile.ticker, name: profile.name, price: quote.c }} type="SELL" />
+                    <Button variant="outline" onClick={() => toggleWatchlist(selectedStock)}>
+                      {isStockInWatchlist ? <X className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
+                      {isStockInWatchlist ? 'Remove' : 'Add to Watchlist'}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+              <Tabs defaultValue="chart" className="mt-4">
+                <TabsList>
+                  <TabsTrigger value="chart"><BarChart2 className="mr-2 h-4 w-4" />Chart</TabsTrigger>
+                  <TabsTrigger value="news"><Newspaper className="mr-2 h-4 w-4" />News</TabsTrigger>
+                  <TabsTrigger value="note"><Eye className="mr-2 h-4 w-4" />AI Note</TabsTrigger>
+                </TabsList>
+                <TabsContent value="chart">
+                  <Card>
+                    <CardContent className="p-2 pt-4">
+                      <StockChart symbol={selectedStock} />
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+                <TabsContent value="news">
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="space-y-4">
+                        {news.map(item => (
+                          <a href={item.url} target="_blank" rel="noopener noreferrer" key={item.id} className="block hover:bg-muted/50 p-2 rounded-lg">
+                            <h3 className="font-semibold">{item.headline}</h3>
+                            <p className="text-xs text-muted-foreground">{item.source} - {new Date(item.datetime * 1000).toLocaleDateString()}</p>
+                            <p className="text-sm mt-1">{item.summary}</p>
+                          </a>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+                <TabsContent value="note">
+                  <AIGeneratedNote stock={{ ticker: profile.ticker, name: profile.name, price: quote.c, changePercent: quote.dp, news: news.map(n => n.headline).join('. ') }} />
+                </TabsContent>
+              </Tabs>
+            </>
+          ) : (
+            <Card>
+              <CardContent className="p-6">
+                <p>No data available. Select a stock from your portfolio, watchlist, or search to view details.</p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        {/* Right Column - Portfolio & Lists */}
+        <div className="grid auto-rows-max items-start gap-4 md:col-span-1">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle>My Portfolio</CardTitle>
+              <CardTitle>Portfolio Overview</CardTitle>
               <CardDescription>Total value including cash</CardDescription>
             </CardHeader>
             <CardContent>
@@ -177,12 +269,9 @@ export default function Home() {
               </div>
             </CardContent>
           </Card>
-        </div>
-        <div className="grid auto-rows-max items-start gap-4 md:col-span-2 lg:col-span-3">
-            <Tabs defaultValue="dashboard">
-             <div className="flex items-center">
+          <Tabs defaultValue="portfolio">
+             <div className="flex items-center mb-2">
                 <TabsList>
-                  <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
                   <TabsTrigger value="portfolio">Holdings</TabsTrigger>
                   <TabsTrigger value="watchlist">Watchlist</TabsTrigger>
                 </TabsList>
@@ -201,95 +290,6 @@ export default function Home() {
                     </Button>
                   </div>
               </div>
-              <TabsContent value="dashboard">
-                 {loading ? (
-                  <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <Skeleton className="h-8 w-1/2" />
-                      <Skeleton className="h-8 w-1/4" />
-                    </CardHeader>
-                    <CardContent>
-                      <Skeleton className="h-8 w-1/3 mb-2" />
-                      <Skeleton className="h-4 w-1/4" />
-                      <div className="mt-4">
-                        <Skeleton className="h-64 w-full" />
-                      </div>
-                    </CardContent>
-                  </Card>
-                ) : profile && quote ? (
-                  <>
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <div className="flex items-center gap-4">
-                          <Avatar className="h-12 w-12">
-                            <AvatarImage src={profile.logo} alt={profile.name} />
-                            <AvatarFallback>{profile.ticker}</AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <CardTitle>{profile.name} ({profile.ticker})</CardTitle>
-                            <p className="text-sm text-muted-foreground">{profile.finnhubIndustry}</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-2xl font-bold">{formatCurrency(quote.c)}</div>
-                          <div className={`flex items-center justify-end text-sm ${quote.d >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                            {quote.d >= 0 ? <TrendingUp className="mr-1 h-4 w-4" /> : <TrendingDown className="mr-1 h-4 w-4" />}
-                            {formatCurrency(quote.d)} ({quote.dp.toFixed(2)}%)
-                          </div>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex gap-2">
-                          <TradeDialog stock={{ ticker: profile.ticker, name: profile.name, price: quote.c }} type="BUY" />
-                          <TradeDialog stock={{ ticker: profile.ticker, name: profile.name, price: quote.c }} type="SELL" />
-                          <Button variant="outline" onClick={() => toggleWatchlist(selectedStock)}>
-                            {isStockInWatchlist ? <X className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
-                            {isStockInWatchlist ? 'Remove' : 'Add to Watchlist'}
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    <Tabs defaultValue="chart" className="mt-4">
-                      <TabsList>
-                        <TabsTrigger value="chart"><BarChart2 className="mr-2 h-4 w-4" />Chart</TabsTrigger>
-                        <TabsTrigger value="news"><Newspaper className="mr-2 h-4 w-4" />News</TabsTrigger>
-                        <TabsTrigger value="note"><Eye className="mr-2 h-4 w-4" />AI Note</TabsTrigger>
-                      </TabsList>
-                      <TabsContent value="chart">
-                        <Card>
-                          <CardContent className="p-2 pt-4">
-                            <StockChart symbol={selectedStock} />
-                          </CardContent>
-                        </Card>
-                      </TabsContent>
-                      <TabsContent value="news">
-                        <Card>
-                          <CardContent className="p-4">
-                            <div className="space-y-4">
-                              {news.map(item => (
-                                <a href={item.url} target="_blank" rel="noopener noreferrer" key={item.id} className="block hover:bg-muted/50 p-2 rounded-lg">
-                                  <h3 className="font-semibold">{item.headline}</h3>
-                                  <p className="text-xs text-muted-foreground">{item.source} - {new Date(item.datetime * 1000).toLocaleDateString()}</p>
-                                  <p className="text-sm mt-1">{item.summary}</p>
-                                </a>
-                              ))}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </TabsContent>
-                      <TabsContent value="note">
-                        <AIGeneratedNote stock={{ ticker: profile.ticker, name: profile.name, price: quote.c, changePercent: quote.dp, news: news.map(n => n.headline).join('. ') }} />
-                      </TabsContent>
-                    </Tabs>
-                  </>
-                ) : (
-                  <Card>
-                    <CardContent className="p-6">
-                      <p>No data available for the selected stock.</p>
-                    </CardContent>
-                  </Card>
-                )}
-              </TabsContent>
               <TabsContent value="portfolio">
                 <Card>
                   <CardContent className="p-2">
@@ -300,12 +300,11 @@ export default function Home() {
                             <div className="flex items-center">Asset <ArrowDownUp className="ml-2 h-3 w-3" /></div>
                           </TableHead>
                           <TableHead className="text-right">Shares</TableHead>
-                          <TableHead className="text-right">Avg. Cost</TableHead>
                           <TableHead onClick={() => requestSort('value')} className="text-right cursor-pointer">
                              <div className="flex items-center justify-end">Value <ArrowDownUp className="ml-2 h-3 w-3" /></div>
                           </TableHead>
                           <TableHead onClick={() => requestSort('gainLoss')} className="text-right cursor-pointer">
-                             <div className="flex items-center justify-end">Overall Gain <ArrowDownUp className="ml-2 h-3 w-3" /></div>
+                             <div className="flex items-center justify-end">Gain <ArrowDownUp className="ml-2 h-3 w-3" /></div>
                           </TableHead>
                         </TableRow>
                       </TableHeader>
@@ -319,9 +318,9 @@ export default function Home() {
                             <TableRow key={item.ticker} onClick={() => handleSelectStock(item.ticker)} className="cursor-pointer">
                               <TableCell>
                                 <div className="font-medium">{item.ticker}</div>
+                                <div className="text-xs text-muted-foreground">{item.quantity} shares</div>
                               </TableCell>
                               <TableCell className="text-right">{item.quantity}</TableCell>
-                               <TableCell className="text-right">{formatCurrency(item.avgCost)}</TableCell>
                               <TableCell className="text-right">
                                 <div>{formatCurrency(currentValue)}</div>
                                 <div className={`text-xs ${item.changePercent && item.changePercent >= 0 ? 'text-green-500' : 'text-red-500'}`}>
