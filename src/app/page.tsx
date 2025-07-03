@@ -174,14 +174,6 @@ export default function Home() {
               </div>
             </CardContent>
           </Card>
-           <Card>
-              <CardHeader>
-                <CardTitle>Portfolio History</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <PortfolioChart data={portfolioHistory} />
-              </CardContent>
-            </Card>
         </div>
         <div className="grid auto-rows-max items-start gap-4 md:col-span-2 lg:col-span-3">
             <Tabs defaultValue="dashboard">

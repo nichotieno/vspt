@@ -2,16 +2,15 @@
 
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import {
-  Auth,
   User as FirebaseUser,
   createUserWithEmailAndPassword,
   onAuthStateChanged,
   signInWithEmailAndPassword,
   signOut,
 } from 'firebase/auth';
-import { auth, db } from '@/lib/firebase';
+import { auth } from '@/lib/firebase';
 import type { User } from '@/types';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { createUserInDb } from '@/app/actions';
 
 interface AuthContextType {
   user: User | null;
@@ -51,13 +50,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
     const firebaseUser = userCredential.user;
     
-    // Create user document in Firestore
-    const userDocRef = doc(db, 'users', firebaseUser.uid);
-    await setDoc(userDocRef, {
-        email: firebaseUser.email,
-        cash: 100000, // Starting cash
-        createdAt: new Date().toISOString(),
-    });
+    // Create user in SQLite DB via Server Action
+    if (firebaseUser.email) {
+      await createUserInDb(firebaseUser.uid, firebaseUser.email);
+    }
 
     return userCredential;
   };

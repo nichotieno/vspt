@@ -1,12 +1,16 @@
 "use client";
 
 import React, { createContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { collection, doc, getDocs, writeBatch, getDoc, setDoc, addDoc, deleteDoc, updateDoc, onSnapshot, query, Unsubscribe } from 'firebase/firestore';
 import type { PortfolioItem, Transaction, PortfolioHistoryItem } from '@/types';
 import { useToast } from "@/hooks/use-toast";
 import { getQuote } from '@/lib/finnhub';
 import { useAuth } from '@/hooks/use-auth';
-import { db } from '@/lib/firebase';
+import { 
+    getUserData, 
+    buyStockAction, 
+    sellStockAction, 
+    toggleWatchlistAction 
+} from '@/app/actions';
 
 interface PortfolioContextType {
   portfolio: PortfolioItem[];
@@ -43,58 +47,32 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
       setPortfolioHistory([]);
       setLoading(true);
   };
-
-  useEffect(() => {
+  
+  const fetchData = useCallback(async () => {
     if (!user) {
         resetState();
         setLoading(false);
         return;
     }
-
     setLoading(true);
-    const unsubscribes: Unsubscribe[] = [];
+    try {
+        const data = await getUserData(user.uid);
+        setCash(data.cash);
+        setPortfolio(data.portfolio.map((p, i) => ({ ...p, id: String(i) }))); // Add a temp id
+        setWatchlist(data.watchlist);
+        setTransactions(data.transactions);
+        setPortfolioHistory(data.portfolioHistory);
+    } catch (error) {
+        console.error("Failed to fetch user data:", error);
+        toast({ variant: "destructive", title: "Error", description: "Could not load your data." });
+    } finally {
+        setLoading(false);
+    }
+  }, [user, toast]);
 
-    // User data (cash)
-    const userDocRef = doc(db, 'users', user.uid);
-    unsubscribes.push(onSnapshot(userDocRef, (doc) => {
-        if (doc.exists()) {
-            setCash(doc.data().cash || 100000);
-        }
-    }));
-    
-    // Portfolio
-    const portfolioColRef = collection(db, 'users', user.uid, 'portfolio');
-    unsubscribes.push(onSnapshot(query(portfolioColRef), (snapshot) => {
-        const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PortfolioItem));
-        setPortfolio(items);
-    }));
-
-    // Watchlist
-    const watchlistColRef = collection(db, 'users', user.uid, 'watchlist');
-    unsubscribes.push(onSnapshot(query(watchlistColRef), (snapshot) => {
-        const items = snapshot.docs.map(doc => doc.id);
-        setWatchlist(items);
-    }));
-
-    // Transactions
-    const transColRef = collection(db, 'users', user.uid, 'transactions');
-    unsubscribes.push(onSnapshot(query(transColRef), (snapshot) => {
-        const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction));
-        setTransactions(items);
-    }));
-
-    // Portfolio History
-    const historyColRef = collection(db, 'users', user.uid, 'portfolioHistory');
-    unsubscribes.push(onSnapshot(query(historyColRef), (snapshot) => {
-        const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PortfolioHistoryItem));
-        setPortfolioHistory(items.sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime()));
-    }));
-
-    setLoading(false);
-
-    return () => unsubscribes.forEach(unsub => unsub());
-
-  }, [user]);
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
   
   // Effect to update live prices for portfolio items
   useEffect(() => {
@@ -119,99 +97,51 @@ export const PortfolioProvider: React.FC<{ children: ReactNode }> = ({ children 
     updatePrices();
 
     return () => clearInterval(intervalId);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [portfolio.length, user]);
 
 
-  const getPortfolioValue = useCallback((portfolio: PortfolioItem[]) => {
-    return portfolio.reduce((total, item) => total + (item.currentPrice || item.avgCost) * item.quantity, 0);
+  const getPortfolioValue = useCallback((portfolioItems: PortfolioItem[]) => {
+    return portfolioItems.reduce((total, item) => total + (item.currentPrice || item.avgCost) * item.quantity, 0);
   }, []);
-
-  const addPortfolioHistoryRecord = async (newPortfolioValue: number) => {
-      if (!user) return;
-      const historyColRef = collection(db, 'users', user.uid, 'portfolioHistory');
-      await addDoc(historyColRef, {
-          date: new Date().toISOString(),
-          value: newPortfolioValue,
-      });
-  }
 
   const buyStock = async (ticker: string, quantity: number, price: number) => {
     if (!user) return;
-    const cost = quantity * price;
-    if (cost > cash) {
-      toast({ variant: "destructive", title: "Transaction Failed", description: "Not enough cash." });
-      return;
-    }
-
-    const batch = writeBatch(db);
-    const userDocRef = doc(db, 'users', user.uid);
-    const portfolioColRef = collection(db, 'users', user.uid, 'portfolio');
-    const transColRef = collection(db, 'users', user.uid, 'transactions');
-    
-    const existingItem = portfolio.find(item => item.ticker === ticker);
-
-    if (existingItem && existingItem.id) {
-        const newQuantity = existingItem.quantity + quantity;
-        const newAvgCost = ((existingItem.avgCost * existingItem.quantity) + cost) / newQuantity;
-        const itemDocRef = doc(portfolioColRef, existingItem.id);
-        batch.update(itemDocRef, { quantity: newQuantity, avgCost: newAvgCost });
+    const result = await buyStockAction(user.uid, ticker, quantity, price);
+    if (result.success) {
+        toast({ title: "Purchase Successful", description: `Bought ${quantity} shares of ${ticker}.` });
+        await fetchData(); // Refetch data
     } else {
-        addDoc(portfolioColRef, { ticker, quantity, avgCost: price });
+        toast({ variant: "destructive", title: "Transaction Failed", description: result.error });
     }
-
-    batch.update(userDocRef, { cash: cash - cost });
-    addDoc(transColRef, { ticker, quantity, price, type: 'BUY', date: new Date().toISOString() });
-    
-    await batch.commit();
-    await addPortfolioHistoryRecord(getPortfolioValue(portfolio) - cost + (quantity * price));
-    toast({ title: "Purchase Successful", description: `Bought ${quantity} shares of ${ticker}.` });
   };
 
   const sellStock = async (ticker: string, quantity: number, price: number) => {
     if (!user) return;
-    const proceeds = quantity * price;
-    const existingItem = portfolio.find(item => item.ticker === ticker);
-
-    if (!existingItem || !existingItem.id || existingItem.quantity < quantity) {
-      toast({ variant: "destructive", title: "Transaction Failed", description: "Not enough shares to sell." });
-      return;
-    }
-    
-    const batch = writeBatch(db);
-    const userDocRef = doc(db, 'users', user.uid);
-    const itemDocRef = doc(db, 'users', user.uid, 'portfolio', existingItem.id);
-    const transColRef = collection(db, 'users', user.uid, 'transactions');
-
-    if (existingItem.quantity === quantity) {
-        batch.delete(itemDocRef);
+    const result = await sellStockAction(user.uid, ticker, quantity, price);
+    if (result.success) {
+        toast({ title: "Sale Successful", description: `Sold ${quantity} shares of ${ticker}.` });
+        await fetchData(); // Refetch data
     } else {
-        batch.update(itemDocRef, { quantity: existingItem.quantity - quantity });
+        toast({ variant: "destructive", title: "Transaction Failed", description: result.error });
     }
-
-    batch.update(userDocRef, { cash: cash + proceeds });
-    addDoc(transColRef, { ticker, quantity, price, type: 'SELL', date: new Date().toISOString() });
-
-    await batch.commit();
-    await addPortfolioHistoryRecord(getPortfolioValue(portfolio) + proceeds - (quantity*price));
-    toast({ title: "Sale Successful", description: `Sold ${quantity} shares of ${ticker}.` });
   };
 
   const toggleWatchlist = async (ticker: string) => {
     if (!user) return;
-    const watchlistColRef = collection(db, 'users', user.uid, 'watchlist');
-    const stockDocRef = doc(watchlistColRef, ticker);
-
-    if (watchlist.includes(ticker)) {
-        await deleteDoc(stockDocRef);
+    const isWatched = watchlist.includes(ticker);
+    const result = await toggleWatchlistAction(user.uid, ticker, isWatched);
+    if (result.success) {
+        await fetchData(); // Refetch data
     } else {
-        await setDoc(stockDocRef, {});
+        toast({ variant: "destructive", title: "Error", description: result.error });
     }
   };
 
-  const getTodaysGainLoss = useCallback((portfolio: PortfolioItem[]) => {
-      if(portfolio.length === 0) return { value: 0, percent: 0 };
-      const totalValue = getPortfolioValue(portfolio);
-      const previousDayValue = portfolio.reduce((total, item) => {
+  const getTodaysGainLoss = useCallback((portfolioItems: PortfolioItem[]) => {
+      if(portfolioItems.length === 0) return { value: 0, percent: 0 };
+      const totalValue = getPortfolioValue(portfolioItems);
+      const previousDayValue = portfolioItems.reduce((total, item) => {
           const currentPrice = item.currentPrice || 0;
           const change = (currentPrice * (item.changePercent || 0)) / 100;
           const previousPrice = currentPrice - change;
