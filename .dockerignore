@@ -1,0 +1,16 @@
+.env
+.env.local
+.git
+.github
+.next
+.vscode
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+README.md
+Dockerfile
+.dockerignore
+stocksim.db-journal
+stocksim.db-wal
+stocksim.db-shm
