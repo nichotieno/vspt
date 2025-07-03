@@ -11,8 +11,8 @@ This document provides a comprehensive overview of the StockSim project, from it
   - **Goals**: To create a full-stack, realistic stock trading simulation application where users can practice trading strategies without financial risk. The application will provide real-time stock data, portfolio tracking, and AI-powered analytical tools.
   - **Scope**: The project includes user authentication, stock data display from the Finnhub API, simulated buying/selling, portfolio and watchlist management, transaction history, performance visualization, and AI-generated stock notes.
   - **Deliverables**: A fully functional, responsive web application with all features outlined in the scope, dockerized for easy deployment, and including a CI pipeline.
-  - **Timeline**: Not applicable (AI-assisted development).
-  - **Budget**: Not applicable (AI-assisted development).
+  - **Timeline**: 3 days.
+  - **Budget**: Not Applicable.
 
 - **Statement of Work (SOW)**
   - **Project Tasks**:

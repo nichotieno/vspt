@@ -1,24 +1,26 @@
+
 # StockSim
 
-A full-stack simulated stock trading web application built with Next.js, Tailwind CSS, and the Finnhub.io API.
+A full-stack simulated stock trading web application built with Next.js, Tailwind CSS, Genkit, and the Finnhub.io API.
 
 ## Features
 
-- **Stock Data Display**: View company info, real-time prices, and percentage changes.
-- **Simulated Trading**: Buy and sell shares with a virtual portfolio.
-- **Portfolio Tracking**: Monitor total portfolio value, gains/losses, and individual holdings.
-- **Watchlist**: Keep track of stocks you're interested in.
-- **Performance Visualization**: Analyze your performance with stock charts and portfolio history.
-- **AI-Powered Notes**: Generate custom notes for your stocks using AI.
-- **Responsive Design**: Access the app on any device.
-- **Dark Mode**: Switch between light and dark themes.
+- **Real-Time Market Data**: View company profiles, real-time price quotes, and daily performance powered by the Finnhub API.
+- **Simulated Trading**: Execute buy and sell orders with a virtual cash balance.
+- **Portfolio Management**: Track holdings, available cash, and overall portfolio value.
+- **Performance Visualization**: Analyze portfolio value over time with historical charts.
+- **Watchlist**: Add and remove stocks to a personal watchlist for easy tracking.
+- **AI-Powered Insights**: Generate custom, strategy-based notes for any stock using Google's Gemini model via Genkit.
+- **User Authentication**: Secure user signup and login functionality.
+- **Responsive Design**: A clean, modern UI that works on any device, with light and dark modes.
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js (v18 or later)
-- npm, yarn, or pnpm
+- Node.js (v20 or later)
+- npm
+- Docker (for containerized deployment)
 
 ### Setup
 
@@ -35,7 +37,7 @@ A full-stack simulated stock trading web application built with Next.js, Tailwin
 
 3.  **Set up environment variables:**
 
-    Create a `.env.local` file in the root of your project and add your Finnhub API key. You can get one for free from [Finnhub.io](https://finnhub.io/register).
+    Create a `.env.local` file in the root of your project and add your Finnhub API key. You can get a free key from [Finnhub.io](https://finnhub.io/register).
 
     ```env
     FINNHUB_API_KEY=your_finnhub_api_key_here
@@ -51,13 +53,50 @@ npm run dev
 
 Open [http://localhost:9002](http://localhost:9002) with your browser to see the result.
 
+## Testing
+
+This project uses Jest and React Testing Library for testing. To run the test suite, use the following command:
+
+```bash
+npm test
+```
+
+## Docker
+
+The application is fully containerized for consistent and easy deployment.
+
+### Build the Docker Image
+
+To build the production-ready Docker image, run:
+
+```bash
+docker build -t stocksim-app .
+```
+
+### Run the Docker Container
+
+To run the application inside a Docker container, use the following command. Remember to replace the placeholder with your actual Finnhub API key.
+
+```bash
+docker run -p 9002:9002 -e FINNHUB_API_KEY="your_finnhub_api_key_here" stocksim-app
+```
+The application will be accessible at `http://localhost:9002`.
+
 ## Deployment
 
-The application is configured for easy deployment on platforms like Vercel or Firebase Hosting.
+The application is configured for easy deployment on platforms like Firebase App Hosting, Vercel, or any other service that supports Docker containers.
 
-### Deploy on Vercel
+### CI/CD
 
-1.  Push your code to a Git repository (e.g., GitHub).
-2.  Import the repository on [Vercel](https://vercel.com/new).
-3.  Add your `FINNHUB_API_KEY` as an environment variable in the Vercel project settings.
-4.  Deploy! Vercel will automatically build and deploy your Next.js application.
+This repository includes a GitHub Actions workflow (`.github/workflows/ci.yml`) that automates the following tasks on every push or pull request to the `main` branch:
+- Installs dependencies
+- Runs the linter and type checker
+- Executes the full test suite
+- Builds the Next.js application
+- Builds the Docker image to ensure it's valid
+
+For the CI pipeline to pass, you must add your `FINNHUB_API_KEY` as a repository secret in your GitHub project settings.
+
+## License
+
+It is recommended to add a `LICENSE` file (e.g., MIT) to the project root to define how others can use your code.
