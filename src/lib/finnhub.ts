@@ -1,3 +1,4 @@
+
 'use server';
 
 const API_KEY = process.env.FINNHUB_API_KEY;
@@ -47,12 +48,20 @@ export async function getCompanyProfile(symbol: string) {
         ipo: '', 
         marketCapitalization: 0, 
         shareOutstanding: 0, 
-        logo: `https://placehold.co/64x64.png`, 
+        logo: '', // Use empty string for better fallback
         phone: '', 
         weburl: '', 
         finnhubIndustry: 'Mock Industry' 
     };
-    return fetcher(`${BASE_URL}/stock/profile2?symbol=${symbol}&token=${API_KEY}`, mock);
+    
+    const data = await fetcher(`${BASE_URL}/stock/profile2?symbol=${symbol}&token=${API_KEY}`, mock);
+    
+    // Ensure the final returned object has a non-null logo string,
+    // so the Avatar component can handle it gracefully (empty string means use fallback).
+    return {
+        ...data,
+        logo: data?.logo || ''
+    };
 }
 
 export async function searchSymbols(query: string) {
