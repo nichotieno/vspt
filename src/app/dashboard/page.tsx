@@ -143,73 +143,78 @@ export default function DashboardPage() {
                     <h1 className="text-xl font-bold">StockSim</h1>
                 </Link>
                 <div className="relative ml-auto flex items-center gap-2 md:grow-0">
-                    <MarketStatus />
                     <StockSearch onSelect={handleSelectStock} />
                     <ThemeToggle />
                     <UserNav />
                 </div>
             </header>
             <main className="flex-1 p-4 md:p-6">
+                 <div className="flex items-center justify-between mb-4">
+                    <h1 className="text-2xl font-semibold">Market Overview</h1>
+                    <MarketStatus />
+                </div>
                 <Card>
                     <CardContent className="p-0">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Asset</TableHead>
-                                    <TableHead className="text-right">Price</TableHead>
-                                    <TableHead className="text-right">Change</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {stocks.map((stock, index) => (
-                                    <TableRow 
-                                        key={stock.symbol} 
-                                        ref={index === stocks.length - 1 ? lastStockElementRef : null}
-                                        className="cursor-pointer"
-                                        onClick={() => handleSelectStock(stock.symbol)}
-                                    >
-                                        <TableCell>
-                                            <div className="flex items-center gap-3">
-                                                <Avatar className="hidden h-9 w-9 sm:flex">
-                                                    <AvatarImage src={stock.logo} alt={stock.description} />
-                                                    <AvatarFallback>{stock.symbol.slice(0, 2)}</AvatarFallback>
-                                                </Avatar>
-                                                <div className="grid gap-0.5">
-                                                    <p className="font-medium">{stock.symbol}</p>
-                                                    <p className="text-xs text-muted-foreground truncate max-w-xs">{stock.description}</p>
-                                                </div>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="text-right font-medium">
-                                            {stock.quote?.c != null ? formatCurrency(stock.quote.c) : <Skeleton className="h-4 w-20 float-right" />}
-                                        </TableCell>
-                                        <TableCell className={`text-right ${stock.quote?.dp != null && stock.quote.dp >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                                            {stock.quote?.dp != null ? (
-                                                <div className="flex items-center justify-end gap-1">
-                                                     {stock.quote.dp >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
-                                                    <span>{stock.quote.dp.toFixed(2)}%</span>
-                                                </div>
-                                            ) : <Skeleton className="h-4 w-16 float-right" />}
-                                        </TableCell>
+                        <div className="w-full overflow-auto">
+                            <Table>
+                                <TableHeader className="sticky top-16 bg-background z-10">
+                                    <TableRow>
+                                        <TableHead>Asset</TableHead>
+                                        <TableHead className="text-right">Price</TableHead>
+                                        <TableHead className="text-right">Change</TableHead>
                                     </TableRow>
-                                ))}
-                                {isLoading && Array.from({ length: 10 }).map((_, i) => (
-                                     <TableRow key={`skeleton-${i}`}>
-                                        <TableCell>
-                                             <div className="flex items-center gap-3">
-                                                 <Skeleton className="hidden h-9 w-9 rounded-full sm:flex" />
-                                                  <div className="grid gap-0.5">
-                                                     <Skeleton className="h-4 w-12" />
-                                                     <Skeleton className="h-3 w-40" />
-                                                 </div>
-                                             </div>
-                                        </TableCell>
-                                        <TableCell><Skeleton className="h-4 w-20 float-right" /></TableCell>
-                                        <TableCell><Skeleton className="h-4 w-16 float-right" /></TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                                </TableHeader>
+                                <TableBody>
+                                    {stocks.map((stock, index) => (
+                                        <TableRow 
+                                            key={stock.symbol} 
+                                            ref={index === stocks.length - 1 ? lastStockElementRef : null}
+                                            className="cursor-pointer"
+                                            onClick={() => handleSelectStock(stock.symbol)}
+                                        >
+                                            <TableCell>
+                                                <div className="flex items-center gap-3">
+                                                    <Avatar className="hidden h-9 w-9 sm:flex">
+                                                        <AvatarImage src={stock.logo} alt={stock.description} />
+                                                        <AvatarFallback>{stock.symbol.slice(0, 2)}</AvatarFallback>
+                                                    </Avatar>
+                                                    <div className="grid gap-0.5">
+                                                        <p className="font-medium">{stock.symbol}</p>
+                                                        <p className="text-xs text-muted-foreground truncate max-w-xs">{stock.description}</p>
+                                                    </div>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="text-right font-medium">
+                                                {stock.quote?.c != null ? formatCurrency(stock.quote.c) : <Skeleton className="h-4 w-20 float-right" />}
+                                            </TableCell>
+                                            <TableCell className={`text-right ${stock.quote?.dp != null && stock.quote.dp >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                                {stock.quote?.dp != null ? (
+                                                    <div className="flex items-center justify-end gap-1">
+                                                        {stock.quote.dp >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+                                                        <span>{stock.quote.dp.toFixed(2)}%</span>
+                                                    </div>
+                                                ) : <Skeleton className="h-4 w-16 float-right" />}
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                    {isLoading && Array.from({ length: 10 }).map((_, i) => (
+                                        <TableRow key={`skeleton-${i}`}>
+                                            <TableCell>
+                                                <div className="flex items-center gap-3">
+                                                    <Skeleton className="hidden h-9 w-9 rounded-full sm:flex" />
+                                                    <div className="grid gap-0.5">
+                                                        <Skeleton className="h-4 w-12" />
+                                                        <Skeleton className="h-3 w-40" />
+                                                    </div>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell><Skeleton className="h-4 w-20 float-right" /></TableCell>
+                                            <TableCell><Skeleton className="h-4 w-16 float-right" /></TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </div>
                          {!hasMore && !isLoading && <p className="text-center text-muted-foreground p-4">You've reached the end of the list.</p>}
                     </CardContent>
                 </Card>
