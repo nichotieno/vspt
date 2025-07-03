@@ -27,8 +27,8 @@ async function fetcher(url: string, mockResponse?: any) {
         }
         return res.json();
     } catch (error: any) {
-         if (error.message.includes("You don't have access to this resource")) {
-            console.warn(`Finnhub premium feature access error for URL: ${url.split('&token=')[0]}. Returning mock data.`);
+         if (error.message.includes("You don't have access to this resource") || error.message.includes("Failed to fetch")) {
+            console.warn(`Finnhub API/Network error for URL: ${url.split('&token=')[0]}. Error: ${error.message}. Returning mock data.`);
             return mockResponse;
         }
         // Re-throw other unexpected errors
@@ -81,5 +81,5 @@ export async function getStockCandles(symbol: string, resolution: string, from: 
 
 export async function getMarketStatus(exchange: string) {
     const mock = { isOpen: true, holiday: null };
-    return fetcher(`${BASE_URL}/stock/market-status?exchange=${exchange}&token=${API_KEY}`, mock);
+    return fetcher(`${BASE__URL}/stock/market-status?exchange=${exchange}&token=${API_KEY}`, mock);
 }
