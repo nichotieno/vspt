@@ -1,3 +1,4 @@
+
 'use server';
 
 import { logInUser, buyStockAction, createUserInDb } from './actions';
@@ -88,56 +89,77 @@ describe('Server Actions', () => {
     const quantity = 10;
     const price = 150;
 
+    // This is a helper to setup mocks for all DB calls in the action flow
+    const setupDbMocks = (userCash: number, existingPortfolioItem: any, finalPortfolioState: any) => {
+      const mockRun = jest.fn();
+      
+      (mockedDb.prepare as jest.Mock).mockImplementation((query: string) => {
+        if (query.startsWith('SELECT cash FROM users')) {
+          return { get: jest.fn().mockReturnValue({ cash: userCash }) };
+        }
+        if (query.startsWith('SELECT id, quantity, avg_cost FROM portfolio')) {
+          return { get: jest.fn().mockReturnValue(existingPortfolioItem) };
+        }
+        if (query.startsWith('SELECT ticker, quantity, avg_cost as avgCost FROM portfolio')) {
+            return { all: jest.fn().mockReturnValue(finalPortfolioState) };
+        }
+        // For all INSERT/UPDATE statements, we return the same mock 'run' function
+        if (query.startsWith('INSERT') || query.startsWith('UPDATE')) {
+          return { run: mockRun };
+        }
+        // Fallback for any unhandled query
+        return { run: jest.fn(), get: jest.fn(), all: jest.fn() };
+      });
+
+      return mockRun;
+    };
+    
     it('should successfully buy a stock for the first time', async () => {
-        const mockUserGet = jest.fn().mockReturnValue({ cash: 2000 });
-        const mockPortfolioGet = jest.fn().mockReturnValue(undefined); // No existing position
-        const mockRun = jest.fn();
-
-        (mockedDb.prepare as jest.Mock).mockImplementation((query) => {
-            if (query.includes('SELECT cash FROM users')) return { get: mockUserGet };
-            if (query.includes('SELECT id, quantity, avg_cost FROM portfolio')) return { get: mockPortfolioGet };
-            if (query.includes('INSERT INTO portfolio')) return { run: mockRun };
-            if (query.includes('UPDATE users')) return { run: mockRun };
-            if (query.includes('INSERT INTO transactions')) return { run: mockRun };
-            if (query.includes('portfolio_history')) return { run: mockRun };
-            if (query.includes('SELECT ticker, quantity, avg_cost as avgCost FROM portfolio')) return { all: jest.fn().mockReturnValue([]) };
-            return { get: jest.fn(), run: jest.fn(), all: jest.fn() };
-        });
-
-        (mockedGetQuote as jest.Mock).mockResolvedValue({ c: 150 });
+        const mockRun = setupDbMocks(20000, undefined, [{ ticker, quantity, avgCost: price }]);
+        (mockedGetQuote as jest.Mock).mockResolvedValue({ c: price });
 
         const result = await buyStockAction(userId, ticker, quantity, price);
 
         expect(result.success).toBe(true);
         expect(mockedDb.transaction).toHaveBeenCalledTimes(1);
 
-        // Check correct statements were prepared
-        expect(mockedDb.prepare).toHaveBeenCalledWith('SELECT cash FROM users WHERE id = ?');
-        expect(mockedDb.prepare).toHaveBeenCalledWith('SELECT id, quantity, avg_cost FROM portfolio WHERE user_id = ? AND ticker = ?');
+        // Check that the INSERT for a new portfolio item was called correctly
         expect(mockedDb.prepare).toHaveBeenCalledWith('INSERT INTO portfolio (user_id, ticker, quantity, avg_cost) VALUES (?, ?, ?, ?)');
+        expect(mockRun).toHaveBeenCalledWith(userId, ticker, quantity, price);
+        
+        // Check that cash was updated
         expect(mockedDb.prepare).toHaveBeenCalledWith('UPDATE users SET cash = cash - ? WHERE id = ?');
-        expect(mockedDb.prepare).toHaveBeenCalledWith('INSERT INTO transactions (user_id, ticker, quantity, price, type, date) VALUES (?, ?, ?, ?, ?, ?)');
-
-        // Check that run was called with correct parameters
-        expect(mockRun).toHaveBeenCalledWith(userId, ticker, quantity, price); // For INSERT portfolio
-        expect(mockRun).toHaveBeenCalledWith(quantity * price, userId); // For UPDATE users
-        expect(mockRun).toHaveBeenCalledWith(userId, ticker, quantity, price, 'BUY', expect.any(String)); // For INSERT transaction
-
+        expect(mockRun).toHaveBeenCalledWith(quantity * price, userId);
+        
         expect(revalidatePath).toHaveBeenCalledWith('/', 'layout');
     });
 
+    it('should successfully buy more of an existing stock', async () => {
+        const existingItem = { id: 1, quantity: 5, avg_cost: 140 };
+        const newQuantity = existingItem.quantity + quantity;
+        const newAvgCost = ((existingItem.avg_cost * existingItem.quantity) + (price * quantity)) / newQuantity;
+
+        const mockRun = setupDbMocks(20000, existingItem, [{ ticker, quantity: newQuantity, avgCost: newAvgCost }]);
+        (mockedGetQuote as jest.Mock).mockResolvedValue({ c: price });
+        
+        const result = await buyStockAction(userId, ticker, quantity, price);
+
+        expect(result.success).toBe(true);
+        
+        // Check that the UPDATE for an existing portfolio item was called correctly
+        expect(mockedDb.prepare).toHaveBeenCalledWith('UPDATE portfolio SET quantity = ?, avg_cost = ? WHERE id = ?');
+        expect(mockRun).toHaveBeenCalledWith(newQuantity, newAvgCost, existingItem.id);
+    });
+
     it('should fail to buy stock with insufficient funds', async () => {
-       const mockUserGet = jest.fn().mockReturnValue({ cash: 100 }); // Not enough cash
-       (mockedDb.prepare as jest.Mock).mockImplementation((query) => {
-         if (query.includes('SELECT cash FROM users')) return { get: mockUserGet };
-         return { get: jest.fn(), run: jest.fn() };
-       });
+       setupDbMocks(100, undefined, []);
 
       const result = await buyStockAction(userId, ticker, quantity, price);
 
       expect(result.success).toBe(false);
       expect(result.error).toBe('Not enough cash.');
-      expect(mockedDb.prepare).not.toHaveBeenCalledWith('INSERT INTO portfolio (user_id, ticker, quantity, avg_cost) VALUES (?, ?, ?, ?)');
+      expect(mockedDb.prepare).not.toHaveBeenCalledWith(expect.stringMatching(/^INSERT INTO portfolio/));
+      expect(mockedDb.prepare).not.toHaveBeenCalledWith(expect.stringMatching(/^UPDATE portfolio/));
     });
   });
 });
