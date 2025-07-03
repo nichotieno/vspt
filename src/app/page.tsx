@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -144,7 +145,7 @@ export default function Home() {
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
-      <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6 py-2">
+      <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
         <div className="flex items-center gap-2">
           <BarChart2 className="h-6 w-6 text-primary" />
           <h1 className="text-xl font-bold">StockSim</h1>
@@ -156,7 +157,7 @@ export default function Home() {
           <UserNav />
         </div>
       </header>
-      <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:grid-cols-3">
+      <main className="flex-1 grid gap-4 p-4 md:gap-8 md:p-6 md:grid-cols-3">
         {/* Left Column - Stock Details */}
         <div className="grid auto-rows-max items-start gap-4 md:col-span-2">
           {loading ? (
@@ -195,7 +196,7 @@ export default function Home() {
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-4">
                   <div className="flex gap-2">
                     <TradeDialog stock={{ ticker: profile.ticker, name: profile.name, price: quote.c }} type="BUY" />
                     <TradeDialog stock={{ ticker: profile.ticker, name: profile.name, price: quote.c }} type="SELL" />
@@ -270,36 +271,34 @@ export default function Home() {
             </CardContent>
           </Card>
           <Tabs defaultValue="portfolio">
-             <div className="flex items-center mb-2">
-                <TabsList>
-                  <TabsTrigger value="portfolio">Holdings</TabsTrigger>
-                  <TabsTrigger value="watchlist">Watchlist</TabsTrigger>
-                </TabsList>
-                 <div className="ml-auto flex items-center gap-2">
-                    <Button asChild size="sm" variant="outline" className="h-7 gap-1">
-                      <Link href="/transactions">
-                        <FileClock className="h-3.5 w-3.5" />
-                        <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                          History
-                        </span>
-                      </Link>
-                    </Button>
-                    <Button size="sm" variant="outline" className="h-7 gap-1" onClick={handleExportPortfolio}>
-                      <Download className="h-3.5 w-3.5" />
-                      <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">Export</span>
-                    </Button>
-                  </div>
-              </div>
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="portfolio">Holdings</TabsTrigger>
+                <TabsTrigger value="watchlist">Watchlist</TabsTrigger>
+              </TabsList>
               <TabsContent value="portfolio">
                 <Card>
-                  <CardContent className="p-2">
+                  <CardHeader className="flex flex-row items-center justify-between py-4">
+                    <CardTitle className="text-lg">My Holdings</CardTitle>
+                     <div className="flex items-center gap-2">
+                        <Button asChild size="sm" variant="outline" className="h-8 gap-1">
+                          <Link href="/transactions">
+                            <FileClock className="h-3.5 w-3.5" />
+                            <span className="hidden sm:inline">History</span>
+                          </Link>
+                        </Button>
+                        <Button size="sm" variant="outline" className="h-8 gap-1" onClick={handleExportPortfolio}>
+                          <Download className="h-3.5 w-3.5" />
+                          <span className="hidden sm:inline">Export</span>
+                        </Button>
+                      </div>
+                  </CardHeader>
+                  <CardContent className="p-0">
                     <Table>
                       <TableHeader>
                         <TableRow>
                           <TableHead onClick={() => requestSort('ticker')} className="cursor-pointer">
                             <div className="flex items-center">Asset <ArrowDownUp className="ml-2 h-3 w-3" /></div>
                           </TableHead>
-                          <TableHead className="text-right">Shares</TableHead>
                           <TableHead onClick={() => requestSort('value')} className="text-right cursor-pointer">
                              <div className="flex items-center justify-end">Value <ArrowDownUp className="ml-2 h-3 w-3" /></div>
                           </TableHead>
@@ -320,7 +319,6 @@ export default function Home() {
                                 <div className="font-medium">{item.ticker}</div>
                                 <div className="text-xs text-muted-foreground">{item.quantity} shares</div>
                               </TableCell>
-                              <TableCell className="text-right">{item.quantity}</TableCell>
                               <TableCell className="text-right">
                                 <div>{formatCurrency(currentValue)}</div>
                                 <div className={`text-xs ${item.changePercent && item.changePercent >= 0 ? 'text-green-500' : 'text-red-500'}`}>
@@ -343,18 +341,28 @@ export default function Home() {
               </TabsContent>
               <TabsContent value="watchlist">
                <Card>
-                  <CardContent className="p-2">
+                  <CardHeader className="py-4">
+                      <CardTitle className="text-lg">My Watchlist</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-0">
                     <Table>
                       <TableHeader>
                         <TableRow>
                           <TableHead>Symbol</TableHead>
+                          <TableHead className="text-right">Action</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {watchlist.map((symbol: string) => (
-                          <TableRow key={symbol} onClick={() => handleSelectStock(symbol)} className="cursor-pointer">
-                            <TableCell>
+                          <TableRow key={symbol}>
+                            <TableCell onClick={() => handleSelectStock(symbol)} className="cursor-pointer">
                               <div className="font-medium">{symbol}</div>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toggleWatchlist(symbol)}>
+                                <X className="h-4 w-4" />
+                                <span className="sr-only">Remove from watchlist</span>
+                              </Button>
                             </TableCell>
                           </TableRow>
                         ))}
