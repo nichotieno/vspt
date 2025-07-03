@@ -1,65 +1,76 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from '@/components/ui/command';
+import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { searchSymbols } from '@/lib/finnhub';
 
 interface StockSearchProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   onSelect: (symbol: string) => void;
 }
 
-export default function StockSearch({ onSelect }: StockSearchProps) {
+export default function StockSearch({ open, onOpenChange, onSelect }: StockSearchProps) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
-  const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
-    if (query.length > 1) {
-      const fetchResults = async () => {
+    const fetchResults = async () => {
+      if (query.length > 1) {
         const searchData = await searchSymbols(query);
         setResults(searchData.result || []);
-      };
-      fetchResults();
-    } else {
-      setResults([]);
-    }
+      } else {
+        setResults([]);
+      }
+    };
+    
+    const timeoutId = setTimeout(() => {
+        fetchResults();
+    }, 300); // Debounce search
+    
+    return () => clearTimeout(timeoutId);
+
   }, [query]);
+  
+  // Reset query when dialog is closed
+  React.useEffect(() => {
+    if (!open) {
+      setTimeout(() => {
+        setQuery('');
+        setResults([]);
+      }, 100)
+    }
+  }, [open]);
+
+  const runCommand = React.useCallback((command: () => unknown) => {
+    command();
+    onOpenChange(false);
+  }, [onOpenChange]);
 
   const handleSelect = (symbol: string) => {
-    setQuery('');
-    setResults([]);
-    setIsOpen(false);
-    onSelect(symbol);
+    runCommand(() => onSelect(symbol));
   };
 
   return (
-    <Command 
-        className="relative rounded-lg border shadow-md overflow-visible"
-        onBlur={() => setTimeout(() => setIsOpen(false), 150)}
-    >
+    <CommandDialog open={open} onOpenChange={onOpenChange}>
       <CommandInput 
-        placeholder="Search for a stock..." 
+        placeholder="Search for a stock by symbol or name..." 
         value={query}
         onValueChange={setQuery}
-        onFocus={() => setIsOpen(true)}
       />
-      {isOpen && (
-        <div className="absolute z-10 top-full mt-2 w-full">
-            <CommandList className="rounded-md border bg-popover text-popover-foreground shadow-md">
-                <CommandEmpty>{query.length > 1 ? "No results found." : "Type to search..."}</CommandEmpty>
-                {results.length > 0 && (
-                <CommandGroup heading="Results">
-                    {results.map((result: { symbol: string; description: string }) => (
-                    <CommandItem key={result.symbol} onSelect={() => handleSelect(result.symbol)}>
-                        <span className="font-medium mr-2">{result.symbol}</span>
-                        <span className="text-muted-foreground">{result.description}</span>
-                    </CommandItem>
-                    ))}
-                </CommandGroup>
-                )}
-            </CommandList>
-        </div>
-      )}
-    </Command>
+      <CommandList>
+        <CommandEmpty>{query.length > 1 ? "No results found." : "Type to search..."}</CommandEmpty>
+        {results.length > 0 && (
+          <CommandGroup heading="Results">
+            {results.map((result: { symbol: string; description: string }) => (
+              <CommandItem key={result.symbol} value={`${result.symbol} ${result.description}`} onSelect={() => handleSelect(result.symbol)}>
+                <span className="font-medium mr-2">{result.symbol}</span>
+                <span className="text-muted-foreground">{result.description}</span>
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        )}
+      </CommandList>
+    </CommandDialog>
   );
 }

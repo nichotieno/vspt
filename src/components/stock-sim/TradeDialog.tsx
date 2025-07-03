@@ -47,10 +47,12 @@ export function TradeDialog({ stock, type }: TradeDialogProps) {
 
   const total = stock.price * (parseInt(quantity, 10) || 0);
 
+  const buttonVariant = type === 'SELL' ? 'destructive' : 'default';
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className={`w-full ${type === 'BUY' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`}>
+        <Button variant={buttonVariant} className="w-full">
           {type === 'BUY' ? <TrendingUp className="mr-2 h-4 w-4"/> : <TrendingDown className="mr-2 h-4 w-4" />}
           {type}
         </Button>
@@ -82,7 +84,7 @@ export function TradeDialog({ stock, type }: TradeDialogProps) {
           </div>
         </div>
         <DialogFooter>
-          <Button onClick={handleTrade} className={`w-full ${type === 'BUY' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`}>
+          <Button onClick={handleTrade} variant={buttonVariant} className="w-full">
             Confirm {type}
           </Button>
         </DialogFooter>

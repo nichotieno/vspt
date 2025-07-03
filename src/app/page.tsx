@@ -24,6 +24,7 @@ export default function Home() {
   const [profile, setProfile] = useState<CompanyProfile | null>(null);
   const [news, setNews] = useState<StockNews[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   const { portfolio, watchlist, toggleWatchlist, cash, getPortfolioValue, getTodaysGainLoss } = usePortfolio();
   const { toast } = useToast();
@@ -58,6 +59,17 @@ export default function Home() {
       fetchData();
     }
   }, [selectedStock, toast]);
+
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault()
+        setSearchOpen((open) => !open)
+      }
+    }
+    document.addEventListener("keydown", down)
+    return () => document.removeEventListener("keydown", down)
+  }, []);
   
   const isStockInWatchlist = watchlist.includes(selectedStock);
 
@@ -71,13 +83,26 @@ export default function Home() {
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
+      <StockSearch open={searchOpen} onOpenChange={setSearchOpen} onSelect={handleSelectStock} />
       <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6 py-2">
         <div className="flex items-center gap-2">
           <BarChart2 className="h-6 w-6 text-primary" />
           <h1 className="text-xl font-bold">StockSim</h1>
         </div>
         <div className="relative ml-auto flex-1 md:grow-0">
-          <StockSearch onSelect={handleSelectStock} />
+          <Button
+            variant="outline"
+            className="flex w-full items-center justify-between text-muted-foreground px-3 sm:w-64"
+            onClick={() => setSearchOpen(true)}
+          >
+            <div className='flex items-center'>
+              <Search className="h-4 w-4 mr-2" />
+              Search stocks...
+            </div>
+            <kbd className="pointer-events-none hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
+              <span className="text-xs">⌘</span>K
+            </kbd>
+          </Button>
         </div>
         <ThemeToggle />
       </header>
