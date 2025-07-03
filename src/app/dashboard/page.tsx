@@ -37,7 +37,9 @@ export default function DashboardPage() {
     const [page, setPage] = useState(1);
     const [isLoading, setIsLoading] = useState(true);
     const [hasMore, setHasMore] = useState(true);
+    
     const observer = useRef<IntersectionObserver>();
+    const isFetching = useRef(false);
 
     useEffect(() => {
         if (!authLoading && !user) {
@@ -45,36 +47,29 @@ export default function DashboardPage() {
         }
     }, [user, authLoading, router]);
 
-    useEffect(() => {
-        const fetchSymbols = async () => {
-            setIsLoading(true);
-            try {
+    const loadMoreStocks = useCallback(async () => {
+        if (isFetching.current || !hasMore) return;
+        
+        isFetching.current = true;
+        setIsLoading(true);
+
+        try {
+            let symbolsToUse = allSymbols;
+            if (page === 1 && symbolsToUse.length === 0) {
                 const symbols = await getStockSymbols('US');
-                // Filter out symbols that might be problematic (e.g., warrants, preferred shares)
                 const filteredSymbols = symbols.filter((s: any) => s.symbol && s.description && !s.symbol.includes('.') && s.type === 'Common Stock');
                 setAllSymbols(filteredSymbols);
-                if (filteredSymbols.length === 0) {
-                    setIsLoading(false); // No symbols found, stop loading.
-                }
-            } catch (error) {
-                console.error("Failed to fetch stock symbols:", error);
-                setIsLoading(false); // Stop loading on error
+                symbolsToUse = filteredSymbols;
             }
-        };
-        if (user) {
-            fetchSymbols();
-        }
-    }, [user]);
 
-    const loadMoreStocks = useCallback(async () => {
-        // Prevent fetching if already loading or no more data
-        if (isLoading || !hasMore || allSymbols.length === 0) return;
-    
-        setIsLoading(true);
-        try {
+            if (symbolsToUse.length === 0) {
+                setHasMore(false);
+                return;
+            }
+
             const start = (page - 1) * STOCKS_PER_PAGE;
             const end = start + STOCKS_PER_PAGE;
-            const symbolsToFetch = allSymbols.slice(start, end);
+            const symbolsToFetch = symbolsToUse.slice(start, end);
     
             if (symbolsToFetch.length === 0) {
                 setHasMore(false);
@@ -87,7 +82,6 @@ export default function DashboardPage() {
                         getQuote(s.symbol),
                         getCompanyProfile(s.symbol)
                     ]);
-                    // Ensure we have the essential data before returning
                     if (quote && profile) {
                         return {
                             symbol: s.symbol,
@@ -99,39 +93,47 @@ export default function DashboardPage() {
                 } catch (error) {
                     console.error(`Failed to fetch data for ${s.symbol}`, error);
                 }
-                return null; // Return null for failed fetches
+                return null;
             });
     
-            const stocksData = (await Promise.all(stocksDataPromises)).filter(Boolean) as StockData[];
-    
-            setStocks(prev => [...prev, ...stocksData]);
+            const newStocks = (await Promise.all(stocksDataPromises)).filter(Boolean) as StockData[];
+            
+            setStocks(prev => [...prev, ...newStocks]);
             setPage(prev => prev + 1);
-            if (end >= allSymbols.length) {
+
+            if (end >= symbolsToUse.length) {
                 setHasMore(false);
             }
         } catch (error) {
-            console.error("An error occurred while loading more stocks:", error);
+            console.error("An error occurred while loading stocks:", error);
+            setHasMore(false);
         } finally {
             setIsLoading(false);
+            isFetching.current = false;
         }
-    }, [allSymbols, page, hasMore, isLoading]);
+    }, [allSymbols, page, hasMore]);
+
 
     useEffect(() => {
-        if (allSymbols.length > 0 && page === 1) {
+        if (user && page === 1) {
             loadMoreStocks();
         }
-    }, [allSymbols, page, loadMoreStocks]);
+    }, [user, page, loadMoreStocks]);
+
 
     const lastStockElementRef = useCallback((node: any) => {
         if (isLoading) return;
         if (observer.current) observer.current.disconnect();
+        
         observer.current = new IntersectionObserver(entries => {
             if (entries[0].isIntersecting && hasMore) {
                 loadMoreStocks();
             }
         });
+
         if (node) observer.current.observe(node);
     }, [isLoading, hasMore, loadMoreStocks]);
+
 
     const handleSelectStock = (symbol: string) => {
         router.push(`/stock/${symbol}`);
@@ -151,6 +153,8 @@ export default function DashboardPage() {
             </div>
         );
     }
+    
+    const showInitialSkeletons = stocks.length === 0 && isLoading;
 
     return (
         <div className="flex min-h-screen w-full flex-col bg-muted/40">
@@ -182,6 +186,21 @@ export default function DashboardPage() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
+                                    {showInitialSkeletons && Array.from({ length: 10 }).map((_, i) => (
+                                         <TableRow key={`skeleton-initial-${i}`}>
+                                            <TableCell>
+                                                <div className="flex items-center gap-3">
+                                                    <Skeleton className="hidden h-9 w-9 rounded-full sm:flex" />
+                                                    <div className="grid gap-0.5">
+                                                        <Skeleton className="h-5 w-12" />
+                                                        <Skeleton className="h-4 w-40" />
+                                                    </div>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell><Skeleton className="h-4 w-20 float-right" /></TableCell>
+                                            <TableCell><Skeleton className="h-4 w-16 float-right" /></TableCell>
+                                        </TableRow>
+                                    ))}
                                     {stocks.map((stock, index) => (
                                         <TableRow 
                                             key={stock.symbol} 
@@ -214,8 +233,8 @@ export default function DashboardPage() {
                                             </TableCell>
                                         </TableRow>
                                     ))}
-                                    {isLoading && Array.from({ length: 10 }).map((_, i) => (
-                                        <TableRow key={`skeleton-${i}`}>
+                                    {isLoading && stocks.length > 0 && Array.from({ length: 5 }).map((_, i) => (
+                                        <TableRow key={`skeleton-loading-${i}`}>
                                             <TableCell>
                                                 <div className="flex items-center gap-3">
                                                     <Skeleton className="hidden h-9 w-9 rounded-full sm:flex" />
