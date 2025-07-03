@@ -20,7 +20,7 @@ import { TradeDialog } from '@/components/stock-sim/TradeDialog';
 import { ThemeToggle } from '@/components/stock-sim/ThemeToggle';
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from '@/hooks/use-auth';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { UserNav } from '@/components/stock-sim/UserNav';
 import { MarketStatus } from '@/components/stock-sim/MarketStatus';
 import { downloadAsCSV } from '@/lib/utils';
@@ -29,7 +29,9 @@ import Link from 'next/link';
 type SortKey = 'ticker' | 'value' | 'gainLoss';
 type SortDirection = 'asc' | 'desc';
 
-export default function StockDetailPage({ params: { symbol } }: { params: { symbol: string } }) {
+export default function StockDetailPage() {
+  const params = useParams();
+  const symbol = params.symbol as string;
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
 
