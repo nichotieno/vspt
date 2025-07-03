@@ -33,7 +33,7 @@ export default function StockDetailPage({ params }: { params: { symbol: string }
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
 
-  const selectedStock = params.symbol.toUpperCase();
+  const selectedStock = useMemo(() => params.symbol.toUpperCase(), [params.symbol]);
   const [quote, setQuote] = useState<StockQuote | null>(null);
   const [profile, setProfile] = useState<CompanyProfile | null>(null);
   const [news, setNews] = useState<StockNews[]>([]);
