@@ -67,13 +67,6 @@ function initializeDb() {
     console.log("Database initialized.");
 }
 
-// Run initialization logic only once
-// In a real app, you might use a more robust migration system
-try {
-    const tableCheck = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='users'").get();
-    if (!tableCheck) {
-        initializeDb();
-    }
-} catch (error) {
-    console.error("Database initialization failed:", error)
-}
+// Run initialization logic. 
+// `CREATE TABLE IF NOT EXISTS` is idempotent, so this is safe to run every time the module is imported.
+initializeDb();
