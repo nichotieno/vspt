@@ -5,14 +5,16 @@ import type { PortfolioItem, Transaction, PortfolioHistoryItem, User } from '@/t
 import { revalidatePath } from 'next/cache';
 import { getQuote } from '@/lib/finnhub';
 import { randomUUID } from 'crypto';
+import bcrypt from 'bcrypt';
 
 // User Actions
-export async function createUserInDb(email: string, name: string, password_DO_NOT_STORE_IN_PLAINTEXT: string) {
+export async function createUserInDb(email: string, name: string, password: string) {
     try {
         const id = randomUUID();
+        const saltRounds = 10;
+        const hashedPassword = await bcrypt.hash(password, saltRounds);
         const stmt = db.prepare('INSERT INTO users (id, email, name, password, cash) VALUES (?, ?, ?, ?, ?)');
-        // In a real application, you should hash the password before storing it.
-        stmt.run(id, email, name, password_DO_NOT_STORE_IN_PLAINTEXT, 100000);
+        stmt.run(id, email, name, hashedPassword, 100000);
         return { success: true };
     } catch (error: any) {
         if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
@@ -22,7 +24,7 @@ export async function createUserInDb(email: string, name: string, password_DO_NO
     }
 }
 
-export async function logInUser(email: string, password_DO_NOT_STORE_IN_PLAINTEXT: string): Promise<{ success: boolean; user?: User; error?: string }> {
+export async function logInUser(email: string, password: string): Promise<{ success: boolean; user?: User; error?: string }> {
     try {
         const stmt = db.prepare('SELECT id, email, password, name, investment_strategy FROM users WHERE email = ?');
         const userRow = stmt.get(email) as { id: string; email: string; password: string, name: string, investment_strategy: string } | undefined;
@@ -31,8 +33,8 @@ export async function logInUser(email: string, password_DO_NOT_STORE_IN_PLAINTEX
             return { success: false, error: 'Invalid email or password.' };
         }
         
-        // In a real application, use bcrypt.compare to check the password hash.
-        if (userRow.password !== password_DO_NOT_STORE_IN_PLAINTEXT) {
+        const passwordMatch = await bcrypt.compare(password, userRow.password);
+        if (!passwordMatch) {
             return { success: false, error: 'Invalid email or password.' };
         }
         
