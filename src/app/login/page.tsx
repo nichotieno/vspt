@@ -39,13 +39,13 @@ export default function LoginPage() {
 
   return (
     <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2">
-      <div className="hidden bg-muted lg:block">
+      <div className="hidden lg:block">
         <Image
           src="https://placehold.co/1920x1080.png"
           alt="Image"
           width="1920"
           height="1080"
-          className="h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
+          className="h-full w-full object-cover dark:brightness-[0.3] dark:grayscale"
           data-ai-hint="trader desk"
         />
       </div>

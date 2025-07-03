@@ -121,13 +121,13 @@ export default function SignupPage() {
           </div>
         </div>
       </div>
-      <div className="hidden bg-muted lg:block">
+      <div className="hidden lg:block">
         <Image
           src="https://placehold.co/1920x1080.png"
           alt="Image"
           width="1920"
           height="1080"
-          className="h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
+          className="h-full w-full object-cover dark:brightness-[0.3] dark:grayscale"
           data-ai-hint="market growth"
         />
       </div>
