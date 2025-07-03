@@ -29,11 +29,11 @@ import Link from 'next/link';
 type SortKey = 'ticker' | 'value' | 'gainLoss';
 type SortDirection = 'asc' | 'desc';
 
-export default function StockDetailPage({ params }: { params: { symbol: string } }) {
+export default function StockDetailPage({ params: { symbol } }: { params: { symbol: string } }) {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
 
-  const selectedStock = useMemo(() => params.symbol.toUpperCase(), [params]);
+  const selectedStock = useMemo(() => symbol.toUpperCase(), [symbol]);
   const [quote, setQuote] = useState<StockQuote | null>(null);
   const [profile, setProfile] = useState<CompanyProfile | null>(null);
   const [news, setNews] = useState<StockNews[]>([]);
@@ -377,3 +377,5 @@ export default function StockDetailPage({ params }: { params: { symbol: string }
     </div>
   );
 }
+
+    
