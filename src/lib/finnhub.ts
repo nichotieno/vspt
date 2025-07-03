@@ -67,5 +67,15 @@ export async function getStockNews(symbol: string) {
 
 export async function getStockCandles(symbol: string, resolution: string, from: number, to: number) {
   const mock = { s: 'no_data' };
-  return fetcher(`${BASE_URL}/stock/candle?symbol=${symbol}&resolution=${resolution}&from=${from}&to=${to}&token=${API_KEY}`, mock);
+  try {
+    return await fetcher(`${BASE_URL}/stock/candle?symbol=${symbol}&resolution=${resolution}&from=${from}&to=${to}&token=${API_KEY}`, mock);
+  } catch (error: any) {
+    // Handle specific premium feature access error gracefully
+    if (error.message.includes("You don't have access to this resource")) {
+      console.warn("Stock candle data is likely a premium Finnhub feature. Returning empty data.");
+      return mock;
+    }
+    // Re-throw other errors
+    throw error;
+  }
 }
