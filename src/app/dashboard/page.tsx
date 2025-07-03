@@ -178,10 +178,10 @@ export default function DashboardPage() {
                                             </div>
                                         </TableCell>
                                         <TableCell className="text-right font-medium">
-                                            {stock.quote ? formatCurrency(stock.quote.c) : <Skeleton className="h-4 w-20 float-right" />}
+                                            {stock.quote?.c != null ? formatCurrency(stock.quote.c) : <Skeleton className="h-4 w-20 float-right" />}
                                         </TableCell>
-                                        <TableCell className={`text-right ${stock.quote && stock.quote.dp >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                                            {stock.quote ? (
+                                        <TableCell className={`text-right ${stock.quote?.dp != null && stock.quote.dp >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                            {stock.quote?.dp != null ? (
                                                 <div className="flex items-center justify-end gap-1">
                                                      {stock.quote.dp >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
                                                     <span>{stock.quote.dp.toFixed(2)}%</span>
