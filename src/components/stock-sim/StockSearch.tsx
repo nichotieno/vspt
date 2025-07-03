@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from '@/components/ui/command';
 import { searchSymbols } from '@/lib/finnhub';
-import { Search } from 'lucide-react';
 
 interface StockSearchProps {
   onSelect: (symbol: string) => void;
@@ -34,19 +33,19 @@ export default function StockSearch({ onSelect }: StockSearchProps) {
   };
 
   return (
-    <Command className="relative rounded-lg border shadow-md">
-      <div className="flex items-center border-b px-3">
-        <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
-        <CommandInput 
-          placeholder="Search for a stock..." 
-          value={query}
-          onValueChange={setQuery}
-          onFocus={() => setIsOpen(true)}
-        />
-      </div>
+    <Command 
+        className="relative rounded-lg border shadow-md overflow-visible"
+        onBlur={() => setTimeout(() => setIsOpen(false), 150)}
+    >
+      <CommandInput 
+        placeholder="Search for a stock..." 
+        value={query}
+        onValueChange={setQuery}
+        onFocus={() => setIsOpen(true)}
+      />
       {isOpen && (
         <div className="absolute z-10 top-full mt-2 w-full">
-            <CommandList>
+            <CommandList className="rounded-md border bg-popover text-popover-foreground shadow-md">
                 <CommandEmpty>{query.length > 1 ? "No results found." : "Type to search..."}</CommandEmpty>
                 {results.length > 0 && (
                 <CommandGroup heading="Results">
