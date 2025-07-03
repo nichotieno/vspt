@@ -48,7 +48,7 @@ export default function WelcomePage() {
                 height="600"
                 alt="Hero"
                 className="mx-auto aspect-square overflow-hidden rounded-xl object-cover sm:w-full lg:order-last lg:aspect-square"
-                data-ai-hint="stock market abstract"
+                data-ai-hint="digital stock ticker"
               />
             </div>
           </div>

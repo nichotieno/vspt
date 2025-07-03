@@ -128,7 +128,7 @@ export default function SignupPage() {
           width="1920"
           height="1080"
           className="h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
-          data-ai-hint="stocks chart"
+          data-ai-hint="market growth"
         />
       </div>
     </div>
